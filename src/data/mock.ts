@@ -31,12 +31,15 @@ export interface Account {
     priorEvents: number;
     riskTier: string;
     caseId?: string;
+    scope?: string;
+    issuedBy?: string;
   };
 }
 
 export interface ConnectedAccount extends Account {
   sharedEvidence: SharedEvidence[];
   verified?: boolean;
+  l30Activity?: string;
 }
 
 export interface Alert {
@@ -79,16 +82,42 @@ export interface AdversityRecord {
   reasons?: string[];
   reasonCodes?: string[];
   revokedBy?: string;
+  revokedAt?: string;
   revokeReason?: string;
 }
 
+export interface IDVAttempt {
+  id: string;
+  created: string;
+  decision: 'VERIFIED' | 'FAILED' | 'MANUAL REVIEW';
+  name: string;
+  birthDate: string;
+  source: string;
+  last4SSN: string;
+  documents: string[];
+}
+
+export interface Transaction {
+  id: string;
+  date: string;
+  type: string;
+  amount: string;
+  direction: 'IN' | 'OUT';
+  counterparty: string;
+  counterpartyToken?: string;
+  status: string;
+  note?: string;
+}
+
 export interface DenylistInfo {
-  reason: string;
-  reasonCode: string;
+  appealSource: string;
+  routingReason: string;
+  appealedAction: string;
+  appliedBy: string;
   deniedDate: string;
-  countryCode: string;
   appealDate: string;
-  appealStatus: string;
+  activeScope: string;
+  reasonCode: string;
 }
 
 export interface AIInsightItem {
@@ -131,6 +160,9 @@ export interface Assignment {
   aiInsights?: AIInsightGroup[];
   assets?: AssetIdentifier[];
   adversityHistory?: AdversityRecord[];
+  adversityHistoryByAccount?: Record<string, AdversityRecord[]>;
+  idvAttempts?: Record<string, IDVAttempt[]>;
+  transactions?: Record<string, Transaction[]>;
 }
 
 export interface QueueStat {
@@ -235,24 +267,26 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
     id: 'global-appeals',
     numericId: '2305171',
     status: 'pending',
-    queueName: 'Denylist Appeals: Scam',
+    queueName: 'Global Appeals: Scam',
     queueSlug: 'global_appeals_demo',
     caseId: 'NTRY_CASE_x4Rm8qWpzA',
     createdAt: 'Sep 29, 2025',
     createdRelative: '9 months ago',
-    dueAt: 'Oct 9, 2025',
-    dueRelative: '9 months ago',
-    dueOverdue: true,
+    dueAt: 'Jul 30, 2026',
+    dueRelative: 'in 14 days',
+    dueOverdue: false,
     createdBy: 'system',
     linkedAssignments: 1,
     tags: [],
     denylistInfo: {
-      reason: 'Scam-related activity',
-      reasonCode: 'SCAM_DENYLIST_L1',
+      appealSource: 'Customer appeal · CF1 case #843921',
+      routingReason: 'Scam-related activity',
+      appealedAction: 'Account denylist',
+      appliedBy: 'Automated Risk controls',
       deniedDate: 'Aug 14, 2025',
-      countryCode: 'US',
       appealDate: 'Sep 29, 2025',
-      appealStatus: 'Under Review',
+      activeScope: '1 account · 1 identity asset',
+      reasonCode: 'SCAM_DENYLIST_L1',
     },
     customer: {
       id: 'C_r4xw8mhkq',
@@ -285,6 +319,8 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
         priorEvents: 0,
         riskTier: 'High',
         caseId: 'NTRY_CASE_x4Rm8qWpzA',
+        scope: 'Account-level adversity',
+        issuedBy: 'Risk Operations',
       },
     },
     connectedSubjects: [
@@ -298,7 +334,7 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
           { type: 'SSN', token: 'fid-1-a8c4f2e1b3...' },
           { type: 'Device', token: 'dev-3F90A1C2...' },
         ],
-        verified: true,
+        l30Activity: 'L30 active',
       },
       {
         id: 'C_5kw3bj9xp',
@@ -311,6 +347,7 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
           { type: 'Phone', token: 'ph-4155550189...' },
         ],
         verified: false,
+        l30Activity: 'L30 active',
       },
       {
         id: 'C_9mq4zv7wr',
@@ -322,7 +359,7 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
           { type: 'SSN', token: 'fid-1-a8c4f2e1b3...' },
           { type: 'IDV', token: 'idv-7B2D9E4F...' },
         ],
-        verified: true,
+        l30Activity: 'L30 active',
       },
       {
         id: 'C_2nj8wk1dv',
@@ -335,6 +372,7 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
           { type: 'Device', token: 'dev-3F90A1C2...' },
         ],
         verified: false,
+        l30Activity: 'No L30 activity',
         denylistDetails: {
           deniedDate: 'Mar 3, 2025',
           reason: 'Money Mule — Coordinated Network',
@@ -345,6 +383,8 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
           priorEvents: 2,
           riskTier: 'Critical',
           caseId: 'NTRY_CASE_mL9pXrBk2T',
+          scope: 'Account-level adversity',
+          issuedBy: 'Financial Crimes Unit',
         },
       },
     ],
@@ -466,6 +506,8 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
         organization: 'AUTOMATED',
         reasons: ['Scam-related activity — account-level sweep'],
         reasonCodes: ['SCAM_DENYLIST_L1'],
+        revokedBy: 'L2 Review — Compliance',
+        revokeReason: 'Successful appeal — identity verified',
       },
       {
         id: 'adv-2',
@@ -475,8 +517,130 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
         organization: 'AUTOMATED',
         reasons: ['Scam-related activity — identity / SSN ending 6892'],
         reasonCodes: ['SCAM_DENYLIST_L1'],
+        revokedBy: '—',
+        revokeReason: 'Shared identity — remains active',
       },
     ],
+    adversityHistoryByAccount: {
+      'C_r4xw8mhkq': [
+        {
+          id: 'adv-1',
+          issuedBy: 'Risk Ops',
+          issuedAt: 'Aug 14, 2025',
+          type: 'DENYLIST',
+          organization: 'AUTOMATED',
+          reasons: ['Scam-related activity — account-level sweep'],
+          reasonCodes: ['SCAM_DENYLIST_L1'],
+          revokedBy: 'L2 Review — Compliance',
+          revokedAt: '—',
+          revokeReason: 'Successful appeal — identity verified',
+        },
+        {
+          id: 'adv-2',
+          issuedBy: 'Risk Ops',
+          issuedAt: 'Aug 14, 2025',
+          type: 'DENYLIST',
+          organization: 'AUTOMATED',
+          reasons: ['Scam-related activity — identity / SSN ending 6892'],
+          reasonCodes: ['SCAM_DENYLIST_L1'],
+          revokedBy: '—',
+          revokedAt: '—',
+          revokeReason: 'Shared identity — remains active',
+        },
+      ],
+      'C_2nj8wk1dv': [
+        {
+          id: 'adv-x1',
+          issuedBy: 'Financial Crimes',
+          issuedAt: 'Mar 3, 2025',
+          type: 'DENYLIST',
+          organization: 'MANUAL',
+          reasons: ['Money Mule — Coordinated Network'],
+          reasonCodes: ['MONEY_MULE_COORD_L2'],
+          revokedBy: undefined,
+          revokedAt: undefined,
+          revokeReason: undefined,
+        },
+        {
+          id: 'adv-x2',
+          issuedBy: 'Risk Ops',
+          issuedAt: 'Oct 12, 2024',
+          type: 'STRIKE',
+          organization: 'AUTOMATED',
+          reasons: ['Suspicious transfer activity'],
+          reasonCodes: ['SUSPICIOUS_ACTIVITY_L1'],
+          revokedBy: 'Risk Ops',
+          revokedAt: 'Nov 5, 2024',
+          revokeReason: 'False positive — cleared on review',
+        },
+      ],
+    },
+    idvAttempts: {
+      'C_r4xw8mhkq': [
+        {
+          id: 'idv-m1',
+          created: 'Jan 11, 2024',
+          decision: 'VERIFIED',
+          name: 'Mei Chen',
+          birthDate: 'Mar 14, 1990',
+          source: 'Persona',
+          last4SSN: '6892',
+          documents: ['CA Driver License'],
+        },
+        {
+          id: 'idv-m2',
+          created: 'Aug 14, 2025',
+          decision: 'FAILED',
+          name: 'Mei Chen',
+          birthDate: 'Mar 14, 1990',
+          source: 'Persona',
+          last4SSN: '6892',
+          documents: ['CA Driver License'],
+        },
+      ],
+      'C_2nj8wk1dv': [
+        {
+          id: 'idv-x1',
+          created: 'Feb 28, 2025',
+          decision: 'MANUAL REVIEW',
+          name: 'Xiao Liu',
+          birthDate: 'Nov 22, 1987',
+          source: 'Persona',
+          last4SSN: '4417',
+          documents: ['Passport'],
+        },
+      ],
+    },
+    transactions: {
+      'C_r4xw8mhkq': [
+        { id: 'txn-m1', date: 'Jun 15, 2025', type: 'P2P Transfer', amount: '$50.00', direction: 'OUT', counterparty: '@jess.w', counterpartyToken: 'C_9w2jk8px', status: 'Completed' },
+        { id: 'txn-m2', date: 'Jun 12, 2025', type: 'P2P Transfer', amount: '$200.00', direction: 'IN', counterparty: '@david.k', counterpartyToken: 'C_4nm3qf7r', status: 'Completed' },
+        { id: 'txn-m3', date: 'Jun 10, 2025', type: 'Cash Out', amount: '$100.00', direction: 'OUT', counterparty: 'Chase ****4821', status: 'Completed' },
+        { id: 'txn-m4', date: 'May 28, 2025', type: 'P2P Transfer', amount: '$25.00', direction: 'OUT', counterparty: '@sarah.t', counterpartyToken: 'C_7xp4wr2k', status: 'Completed' },
+        { id: 'txn-m5', date: 'May 20, 2025', type: 'P2P Transfer', amount: '$150.00', direction: 'IN', counterparty: '@tony.m', counterpartyToken: 'C_2bq8nf1v', status: 'Completed' },
+        { id: 'txn-m6', date: 'May 15, 2025', type: 'Cash In', amount: '$500.00', direction: 'IN', counterparty: 'Employer Direct Deposit', status: 'Completed' },
+        { id: 'txn-m7', date: 'Apr 30, 2025', type: 'P2P Transfer', amount: '$35.00', direction: 'OUT', counterparty: '@mike.r', counterpartyToken: 'C_6wr3nk0q', status: 'Completed' },
+        { id: 'txn-m8', date: 'Apr 22, 2025', type: 'P2P Transfer', amount: '$80.00', direction: 'IN', counterparty: '@lisa.h', counterpartyToken: 'C_1pt9qw5j', status: 'Completed' },
+        { id: 'txn-m9', date: 'Apr 10, 2025', type: 'Cash Out', amount: '$200.00', direction: 'OUT', counterparty: 'Chase ****4821', status: 'Completed' },
+        { id: 'txn-m10', date: 'Mar 25, 2025', type: 'P2P Transfer', amount: '$15.00', direction: 'OUT', counterparty: '@grace.l', counterpartyToken: 'C_8fw2mk4n', status: 'Completed' },
+        { id: 'txn-m11', date: 'Mar 18, 2025', type: 'P2P Transfer', amount: '$300.00', direction: 'IN', counterparty: '@wei.chen', counterpartyToken: 'C_3nq7vk9x', status: 'Completed' },
+        { id: 'txn-m12', date: 'Mar 5, 2025', type: 'Cash In', amount: '$500.00', direction: 'IN', counterparty: 'Employer Direct Deposit', status: 'Completed' },
+      ],
+      'C_2nj8wk1dv': [
+        { id: 'txn-x1', date: 'Mar 3, 2025  11:42 AM', type: 'P2P Transfer', amount: '$950.00', direction: 'OUT', counterparty: '$meic_temp', status: 'Completed', note: 'Rapid transfer' },
+        { id: 'txn-x2', date: 'Mar 3, 2025  11:38 AM', type: 'P2P Transfer', amount: '$950.00', direction: 'IN', counterparty: '$qfund_82', status: 'Completed', note: 'Pass-through detected' },
+        { id: 'txn-x3', date: 'Mar 3, 2025  9:15 AM', type: 'P2P Transfer', amount: '$1,000.00', direction: 'OUT', counterparty: '$paylink9', status: 'Completed' },
+        { id: 'txn-x4', date: 'Mar 2, 2025  8:55 PM', type: 'P2P Transfer', amount: '$1,000.00', direction: 'IN', counterparty: '$send_r41', status: 'Completed', note: 'Pass-through detected' },
+        { id: 'txn-x5', date: 'Mar 2, 2025  4:22 PM', type: 'P2P Transfer', amount: '$800.00', direction: 'OUT', counterparty: '$xfer_acc', status: 'Completed' },
+        { id: 'txn-x6', date: 'Mar 2, 2025  9:10 AM', type: 'P2P Transfer', amount: '$800.00', direction: 'IN', counterparty: '$src_ql29', status: 'Completed', note: 'Pass-through detected' },
+        { id: 'txn-x7', date: 'Mar 1, 2025  11:58 PM', type: 'P2P Transfer', amount: '$500.00', direction: 'OUT', counterparty: '$msend_01', status: 'Completed' },
+        { id: 'txn-x8', date: 'Mar 1, 2025  11:48 PM', type: 'P2P Transfer', amount: '$500.00', direction: 'IN', counterparty: '$inflow88', status: 'Completed', note: 'Pass-through detected' },
+        { id: 'txn-x9', date: 'Feb 28, 2025  6:04 PM', type: 'P2P Transfer', amount: '$1,200.00', direction: 'OUT', counterparty: '$chain_99', status: 'Completed' },
+        { id: 'txn-x10', date: 'Feb 28, 2025  5:55 PM', type: 'P2P Transfer', amount: '$1,200.00', direction: 'IN', counterparty: '$rapid_tt', status: 'Completed', note: 'Pass-through detected' },
+        { id: 'txn-x11', date: 'Feb 27, 2025  2:31 PM', type: 'Cash In', amount: '$2,500.00', direction: 'IN', counterparty: 'ACH (Unknown originator)', status: 'Completed' },
+        { id: 'txn-x12', date: 'Feb 26, 2025', type: 'P2P Transfer', amount: '$2,400.00', direction: 'OUT', counterparty: '$payout_2', status: 'Completed' },
+      ],
+    },
   },
 
   'scams-l1': {

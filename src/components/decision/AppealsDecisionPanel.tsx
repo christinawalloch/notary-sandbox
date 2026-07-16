@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { Toggle } from '../ui/Toggle'
 
 const STEPS = [
-  { id: 'appeal-decision', label: 'Appeal Decision' },
+  { id: 'appeal-decision', label: 'Disposition' },
   { id: 'escalation', label: 'Escalation' },
   { id: 'adverse-actions', label: 'Adverse Actions' },
 ]
@@ -144,11 +144,11 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
         )}
         <div className="flex items-center gap-3 px-5 pb-4">
           <button
-            onClick={isNextDisabled || (isLast && !comment.trim()) ? undefined : (isLast ? () => alert('Decision submitted!') : goNext)}
-            disabled={isNextDisabled || (isLast && !comment.trim())}
+            onClick={isLast ? (!comment.trim() ? undefined : () => alert('Decision submitted!')) : (isNextDisabled ? undefined : goNext)}
+            disabled={isLast ? !comment.trim() : isNextDisabled}
             className={clsx(
               'px-5 py-2 text-sm font-semibold rounded-lg transition-colors shadow-sm',
-              isNextDisabled || (isLast && !comment.trim())
+              (isLast ? !comment.trim() : isNextDisabled)
                 ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed shadow-none'
                 : 'bg-brand hover:bg-brand-600 text-white'
             )}

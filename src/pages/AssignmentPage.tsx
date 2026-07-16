@@ -10,6 +10,10 @@ import { AlertsTable } from '../components/evidence/AlertsTable'
 import { DenylistInfo } from '../components/evidence/DenylistInfo'
 import { AssetsIdentifiers } from '../components/evidence/AssetsIdentifiers'
 import { AdversityHistory } from '../components/evidence/AdversityHistory'
+import { IDVAttempts } from '../components/evidence/IDVAttempts'
+import { GovernmentIDImages } from '../components/evidence/GovernmentIDImages'
+import { TransactionSearch } from '../components/evidence/TransactionSearch'
+import { ConversationHistory } from '../components/evidence/ConversationHistory'
 import { DecisionPanel } from '../components/decision/DecisionPanel'
 import { AppealsDecisionPanel } from '../components/decision/AppealsDecisionPanel'
 import { CustomerCard } from '../components/customer/CustomerCard'
@@ -53,11 +57,29 @@ export default function AssignmentPage() {
     }
   }
 
+  const NAV_TO_TAB: Record<string, string> = {
+    'customer-info': 'overview', 'account': 'overview', 'account-details': 'overview',
+    'assets': 'overview', 'adversity-history': 'overview', 'idv-attempts': 'overview', 'government-id': 'overview',
+    'money': 'money', 'transaction-search': 'money',
+    'conversation': 'conversation', 'email-history': 'conversation',
+  }
+
+  const handleNavSelect = (id: string) => {
+    setActiveNavItem(id)
+    const targetTab = NAV_TO_TAB[id]
+    if (targetTab) setActiveTab(targetTab)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
+  }
+
   return (
     <AppShell
       navItems={config.navItems}
       activeNavItem={activeNavItem}
-      onNavSelect={setActiveNavItem}
+      onNavSelect={handleNavSelect}
     >
       <div className="flex flex-1 overflow-hidden">
         {/* Main column */}
@@ -67,7 +89,7 @@ export default function AssignmentPage() {
             <Link to="/queues" className="text-zinc-500 hover:text-zinc-800 transition-colors">Home</Link>
             <span className="text-zinc-400">›</span>
             <span className="text-zinc-600 hover:text-zinc-800 transition-colors cursor-pointer" onClick={() => window.history.back()}>
-              {assignment.queueName.includes(':') ? assignment.queueName.split(':')[1].trim() : assignment.queueName}
+              {assignment.queueName}
             </span>
             <span className="text-zinc-400">›</span>
             <span className="text-zinc-800 font-medium">#{assignment.numericId}</span>
@@ -81,7 +103,7 @@ export default function AssignmentPage() {
           />
 
           {config.showDenylistInfo && assignment.denylistInfo && (
-            <div className="px-6 pt-3 pb-2 shrink-0">
+            <div id="appeal-context" className="px-6 pt-3 pb-2 shrink-0">
               <DenylistInfo info={assignment.denylistInfo} />
             </div>
           )}
@@ -207,13 +229,15 @@ function TabContent({
   // Overview tab (global-appeals default)
   if (activeTab === 'overview' || activeTab === 'review') {
     return (
-      <div className="p-6 space-y-6">
+      <div className="px-6 pt-3 pb-6 space-y-3">
         {assignment.customer && (
-          <CustomerCard customer={assignment.customer} />
+          <div id="customer-info">
+            <CustomerCard customer={assignment.customer} />
+          </div>
         )}
 
         {config.showAccountSelector && assignment.primarySubject && (
-          <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">
+          <div id="account" className="bg-white rounded-xl border border-zinc-200 px-5 py-4">
             <AccountSelector
               primarySubject={assignment.primarySubject}
               connectedSubjects={assignment.connectedSubjects}
@@ -221,20 +245,40 @@ function TabContent({
               onSelect={onSelectSubject}
             />
             {selectedAccount && (
-              <AccountDetails
-                account={selectedAccount}
-                defaultExpanded={!!(assignment.assets?.length || assignment.adversityHistory?.length)}
-                expandedContent={
-                  <>
-                    {assignment.assets && assignment.assets.length > 0 && (
-                      <AssetsIdentifiers assets={assignment.assets} />
-                    )}
-                    {assignment.adversityHistory && assignment.adversityHistory.length > 0 && (
-                      <AdversityHistory records={assignment.adversityHistory} />
-                    )}
-                  </>
-                }
-              />
+              <div id="account-details">
+                <AccountDetails
+                  account={selectedAccount}
+                  defaultExpanded={!!(assignment.assets?.length || assignment.adversityHistory?.length || assignment.adversityHistoryByAccount)}
+                  expandedContent={
+                    <>
+                      {assignment.assets && assignment.assets.length > 0 && (
+                        <div id="assets" className="scroll-mt-4">
+                          <AssetsIdentifiers assets={assignment.assets} />
+                        </div>
+                      )}
+                      {assignment.adversityHistoryByAccount ? (
+                        <div id="adversity-history" className="scroll-mt-4">
+                          <AdversityHistory records={assignment.adversityHistoryByAccount[selectedAccount.id] ?? []} />
+                        </div>
+                      ) : (
+                        assignment.adversityHistory && assignment.adversityHistory.length > 0 && (
+                          <AdversityHistory records={assignment.adversityHistory} />
+                        )
+                      )}
+                      {assignment.idvAttempts && (
+                        <div id="idv-attempts" className="scroll-mt-4">
+                          <IDVAttempts attempts={assignment.idvAttempts[selectedAccount.id] ?? []} />
+                        </div>
+                      )}
+                      {assignment.idvAttempts && (
+                        <div id="government-id" className="scroll-mt-4">
+                          <GovernmentIDImages accountId={selectedAccount.id} />
+                        </div>
+                      )}
+                    </>
+                  }
+                />
+              </div>
             )}
           </div>
         )}
@@ -289,6 +333,32 @@ function TabContent({
             {selectedAccount && <AccountDetails account={selectedAccount} />}
           </div>
         )}
+      </div>
+    )
+  }
+
+  // Money tab
+  if (activeTab === 'money') {
+    const accountId = selectedAccount?.id ?? assignment.customer?.id ?? assignment.primarySubject?.id ?? ''
+    return (
+      <div id="money" className="px-6 pt-3 pb-6">
+        <div id="transaction-search">
+          <TransactionSearch
+            transactions={assignment.transactions?.[accountId] ?? []}
+            accountId={accountId}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // Conversation tab
+  if (activeTab === 'conversation') {
+    return (
+      <div id="conversation" className="px-6 pt-3 pb-6">
+        <div id="email-history">
+          <ConversationHistory />
+        </div>
       </div>
     )
   }

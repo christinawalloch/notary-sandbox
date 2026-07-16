@@ -87,15 +87,10 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
                 <div className="font-semibold text-zinc-900 mb-2.5 text-sm">Denylist Details</div>
                 <div className="space-y-1.5">
                   {[
-                    ['Denied', primarySubject.denylistDetails.deniedDate],
                     ['Reason', primarySubject.denylistDetails.reason],
-                    ['Reason Code', primarySubject.denylistDetails.reasonCode],
-                    ['Denylisted By', primarySubject.denylistDetails.denylistedBy],
-                    ['Appeal Status', primarySubject.denylistDetails.appealStatus],
-                    ['Appeal Filed', primarySubject.denylistDetails.appealDate],
-                    ['Prior Events', primarySubject.denylistDetails.priorEvents === 0 ? 'None' : String(primarySubject.denylistDetails.priorEvents)],
-                    ['Risk Tier', primarySubject.denylistDetails.riskTier],
-                    ['Case ID', primarySubject.denylistDetails.caseId],
+                    ['Issued by', primarySubject.denylistDetails.issuedBy ?? primarySubject.denylistDetails.denylistedBy],
+                    ['Issued', primarySubject.denylistDetails.deniedDate],
+                    ['Scope', primarySubject.denylistDetails.scope ?? 'Account-level adversity'],
                   ].filter(([, v]) => v).map(([label, value]) => (
                     <div key={label as string} className="flex items-baseline gap-2">
                       <span className="font-medium text-zinc-500 shrink-0 w-24">{label}</span>
@@ -164,13 +159,10 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
                         <div className="font-semibold text-zinc-900 mb-2.5 text-sm">Denylist Details</div>
                         <div className="space-y-1.5">
                           {[
-                            ['Denied', subject.denylistDetails.deniedDate],
                             ['Reason', subject.denylistDetails.reason],
-                            ['Reason Code', subject.denylistDetails.reasonCode],
-                            ['Denylisted By', subject.denylistDetails.denylistedBy],
-                            ['Prior Events', subject.denylistDetails.priorEvents === 0 ? 'None' : `${subject.denylistDetails.priorEvents} prior events`],
-                            ['Risk Tier', subject.denylistDetails.riskTier],
-                            ['Case ID', subject.denylistDetails.caseId],
+                            ['Issued by', subject.denylistDetails.issuedBy ?? subject.denylistDetails.denylistedBy],
+                            ['Issued', subject.denylistDetails.deniedDate],
+                            ['Scope', subject.denylistDetails.scope ?? 'Account-level adversity'],
                           ].filter(([, v]) => v).map(([label, value]) => (
                             <div key={label as string} className="flex items-baseline gap-2">
                               <span className="font-medium text-zinc-500 shrink-0 w-24">{label}</span>
@@ -198,6 +190,16 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
                         </span>
                       )
                     })}
+                  </span>
+                )}
+                {subject.l30Activity && (
+                  <span className={clsx(
+                    'text-2xs font-medium px-1.5 py-0.5 rounded ml-1',
+                    subject.l30Activity === 'L30 active'
+                      ? 'text-brand bg-green-50'
+                      : 'text-zinc-400 bg-zinc-100'
+                  )}>
+                    {subject.l30Activity}
                   </span>
                 )}
               </label>

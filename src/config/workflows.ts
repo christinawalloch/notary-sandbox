@@ -17,6 +17,7 @@ export interface TabConfig {
 export interface NavItem {
   id: string;
   label: string;
+  children?: NavItem[];
 }
 
 export interface WorkflowConfig {
@@ -42,18 +43,39 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
     showAccountSelector: true,
     accountMode: 'single',
     showDenylistInfo: true,
-    showAlerts: true,
+    showAlerts: false,
     decisionVariant: 'appeals',
     tabs: [
       { id: 'overview', label: 'Overview' },
+      { id: 'money', label: 'Money' },
       { id: 'conversation', label: 'Conversation' },
     ],
     navItems: [
       { id: 'assignment', label: 'Assignment' },
-      { id: 'denylist', label: 'Denylist Info' },
-      { id: 'account', label: 'Account' },
-      { id: 'alerts', label: 'Alerts' },
-      { id: 'timeline', label: 'Timeline' },
+      { id: 'appeal-context', label: 'Appeal Context' },
+      { id: 'customer-info', label: 'Customer Info' },
+      {
+        id: 'account', label: 'Account',
+        children: [
+          { id: 'account-details', label: 'Account Details' },
+          { id: 'assets', label: 'Assets & Identifiers' },
+          { id: 'adversity-history', label: 'Adversity History' },
+          { id: 'idv-attempts', label: 'IDV Attempts' },
+          { id: 'government-id', label: 'Government ID' },
+        ],
+      },
+      {
+        id: 'money', label: 'Money',
+        children: [
+          { id: 'transaction-search', label: 'Transaction Search' },
+        ],
+      },
+      {
+        id: 'conversation', label: 'Conversation',
+        children: [
+          { id: 'email-history', label: 'Email History' },
+        ],
+      },
     ],
   },
 

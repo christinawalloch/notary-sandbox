@@ -15,7 +15,7 @@ export function WorkflowTabs({ tabs, activeTab, onTabChange }: WorkflowTabsProps
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
           className={clsx(
-            'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+            'px-4 py-1 text-sm font-medium border-b-2 -mb-px transition-colors',
             activeTab === tab.id
               ? 'border-brand text-brand-700'
               : 'border-transparent text-zinc-500 hover:text-zinc-800 hover:border-zinc-300'

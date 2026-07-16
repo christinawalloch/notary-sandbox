@@ -1,7 +1,10 @@
-import { ExternalLink, Plus, CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { ExternalLink, Plus, Minus, CheckCircle2 } from 'lucide-react'
 import type { Account } from '../../data/mock'
 
 export function CustomerCard({ customer }: { customer: Account }) {
+  const [showDetails, setShowDetails] = useState(false)
+
   return (
     <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">
       <div className="flex items-start justify-between gap-6">
@@ -55,9 +58,12 @@ export function CustomerCard({ customer }: { customer: Account }) {
             <ExternalLink size={11} />
             Adverse Media
           </button>
-          <button className="flex items-center gap-1.5 text-xs font-medium text-zinc-900 border border-zinc-200 px-2.5 py-1.5 rounded-lg hover:bg-zinc-50 transition-colors whitespace-nowrap">
-            <Plus size={11} />
-            Show Details
+          <button
+            onClick={() => setShowDetails(v => !v)}
+            className="flex items-center gap-1 text-xs font-medium text-brand hover:opacity-80 transition-opacity shrink-0 whitespace-nowrap"
+          >
+            {showDetails ? <Minus size={12} /> : <Plus size={12} />}
+            {showDetails ? 'Hide Details' : 'Show Details'}
           </button>
         </div>
       </div>
