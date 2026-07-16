@@ -4,8 +4,8 @@ import type { Account } from '../../data/mock'
 
 const FILLED_TAGS = new Set(['PERSONAL', 'BUSINESS'])
 
-export function AccountDetails({ account, expandedContent }: { account: Account; expandedContent?: React.ReactNode }) {
-  const [showExtra, setShowExtra] = useState(false)
+export function AccountDetails({ account, expandedContent, defaultExpanded }: { account: Account; expandedContent?: React.ReactNode; defaultExpanded?: boolean }) {
+  const [showExtra, setShowExtra] = useState(defaultExpanded ?? false)
 
   return (
     <div className="pt-4 mt-4 border-t border-zinc-100">

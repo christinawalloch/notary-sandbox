@@ -5,7 +5,7 @@ export function Toggle({
   onChange,
   labels = ['No', 'Yes'],
 }: {
-  value: boolean
+  value: boolean | null
   onChange: (v: boolean) => void
   labels?: [string, string]
 }) {
@@ -16,7 +16,7 @@ export function Toggle({
         onClick={() => onChange(false)}
         className={clsx(
           'px-5 py-1.5 text-sm font-medium transition-colors',
-          !value ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-50'
+          value === false ? 'bg-brand text-white' : 'bg-white text-zinc-600 hover:bg-zinc-50'
         )}
       >
         {labels[0]}
@@ -26,7 +26,7 @@ export function Toggle({
         onClick={() => onChange(true)}
         className={clsx(
           'px-5 py-1.5 text-sm font-medium border-l border-zinc-200 transition-colors',
-          value ? 'bg-brand text-white' : 'bg-white text-zinc-600 hover:bg-zinc-50'
+          value === true ? 'bg-brand text-white' : 'bg-white text-zinc-600 hover:bg-zinc-50'
         )}
       >
         {labels[1]}

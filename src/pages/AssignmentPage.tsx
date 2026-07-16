@@ -223,6 +223,7 @@ function TabContent({
             {selectedAccount && (
               <AccountDetails
                 account={selectedAccount}
+                defaultExpanded={!!(assignment.assets?.length || assignment.adversityHistory?.length)}
                 expandedContent={
                   <>
                     {assignment.assets && assignment.assets.length > 0 && (

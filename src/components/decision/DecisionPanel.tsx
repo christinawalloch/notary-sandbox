@@ -250,10 +250,10 @@ function AdverseActionsStep({ accountToken }: { accountToken: string }) {
   const [action, setAction] = useState('')
 
   const ACTIONS = ['Denylist', 'Apply Strike', 'Revoke Denylist']
-  const DENYLIST_REASONS = ['Rise Scam', 'Fraud', 'AML Violation', 'Account Takeover']
+  const DENYLIST_REASONS = ['Scam-related activity', 'Fraud', 'AML Violation', 'Account Takeover']
   const CATEGORIES = ['Financial Services', 'Marketplace', 'Cash App Pay', 'Borrow']
   const PRODUCTS = ['P2P', 'BNPL', 'Bill Pay', 'Investing']
-  const ADVERSITIES = ['Rise Scam - Applied Aug 2025', 'Prior Strike - Jan 2025']
+  const ADVERSITIES = ['Scam-related activity - Applied Aug 2025', 'Prior Strike - Jan 2025']
   const REVOCATION_REASONS = ['Insufficient Evidence', 'Successful Appeal', 'Error in Application']
 
   return (

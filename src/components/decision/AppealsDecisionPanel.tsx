@@ -21,19 +21,24 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
   const [stepId, setStepId] = useState(
     n >= 3 ? 'adverse-actions' : n === 2 ? 'escalation' : 'appeal-decision'
   )
-  const [appealDecision, setAppealDecision] = useState(n >= 1 ? 'Overturn adversities' : '')
-  const [escalation, setEscalation] = useState(n >= 2 ? 'No' : '')
-  const [applyChanges, setApplyChanges] = useState(n >= 3)
+  // false = Uphold, true = Overturn, null = unselected
+  const [appealIsOverturn, setAppealIsOverturn] = useState<boolean | null>(n >= 1 ? true : null)
+  // false = No, true = Yes, null = unselected
+  const [escalate, setEscalate] = useState<boolean | null>(null)
+  // null = unselected
+  const [applyChanges, setApplyChanges] = useState<boolean | null>(n >= 3 ? true : null)
   const [meiAction, setMeiAction] = useState(n >= 3 ? 'Revoke denylist' : '')
-  const [ssnAction, setSsnAction] = useState(n >= 3 ? 'No change' : '')
-  const [xiaoAction, setXiaoAction] = useState(n >= 3 ? 'No change' : '')
+  const [meiRevokeReason, setMeiRevokeReason] = useState(n >= 3 ? 'Successful appeal — identity verified' : '')
 
   const activeIdx = STEPS.findIndex(s => s.id === stepId)
 
   const isNextDisabled =
-    (stepId === 'appeal-decision' && !appealDecision) ||
-    (stepId === 'escalation' && !escalation) ||
-    (stepId === 'adverse-actions' && applyChanges && (!meiAction || !ssnAction || !xiaoAction))
+    (stepId === 'appeal-decision' && appealIsOverturn === null) ||
+    (stepId === 'escalation' && escalate === null) ||
+    (stepId === 'adverse-actions' && (
+      applyChanges === null ||
+      (applyChanges && (!meiAction || (meiAction === 'Revoke denylist' && !meiRevokeReason)))
+    ))
 
   const goNext = () => {
     if (activeIdx < STEPS.length - 1) setStepId(STEPS[activeIdx + 1].id)
@@ -44,7 +49,7 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
 
   const isLast = activeIdx === STEPS.length - 1
   const ctaLabel = isLast
-    ? (appealDecision === 'Overturn adversities' ? 'Submit for L2 Review' : 'Submit Decision')
+    ? (appealIsOverturn ? 'Submit for L2 Review' : 'Submit Decision')
     : 'Next'
 
   return (
@@ -94,18 +99,17 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
       {/* Step content */}
       <div className="flex-1 overflow-y-auto px-5 py-2">
         {stepId === 'appeal-decision' && (
-          <AppealDecisionStep value={appealDecision} onChange={setAppealDecision} />
+          <AppealDecisionStep value={appealIsOverturn} onChange={setAppealIsOverturn} />
         )}
         {stepId === 'escalation' && (
-          <EscalationStep value={escalation} onChange={setEscalation} />
+          <EscalationStep value={escalate} onChange={setEscalate} />
         )}
         {stepId === 'adverse-actions' && (
           <AdverseActionsStep
             apply={applyChanges}
-            onApply={v => { setApplyChanges(v); setMeiAction(''); setSsnAction(''); setXiaoAction('') }}
-            meiAction={meiAction} onMeiAction={setMeiAction}
-            ssnAction={ssnAction} onSsnAction={setSsnAction}
-            xiaoAction={xiaoAction} onXiaoAction={setXiaoAction}
+            onApply={v => { setApplyChanges(v); setMeiAction(''); setMeiRevokeReason('') }}
+            meiAction={meiAction} onMeiAction={v => { setMeiAction(v); setMeiRevokeReason('') }}
+            meiRevokeReason={meiRevokeReason} onMeiRevokeReason={setMeiRevokeReason}
           />
         )}
       </div>
@@ -146,40 +150,28 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
 
 // ─── Step 1: Appeal Decision ──────────────────────────────────────────────────
 
-function AppealDecisionStep({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function AppealDecisionStep({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="space-y-4">
-      <Field label="What is the outcome of this appeal?">
-        <Select
-          value={value}
-          onChange={onChange}
-          placeholder="Select..."
-          options={['Overturn adversities', 'Uphold adversities']}
-          filled={!!value}
-        />
-      </Field>
+      <div>
+        <p className="text-sm text-zinc-600 mb-2">What is the outcome of this appeal?</p>
+        <Toggle value={value} onChange={onChange} labels={['Uphold', 'Overturn']} />
+      </div>
     </div>
   )
 }
 
 // ─── Step 2: Escalation ───────────────────────────────────────────────────────
 
-function EscalationStep({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const ESCALATION_OPTIONS = ['No', 'Yes, escalate or refer']
-
+function EscalationStep({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="space-y-4">
-      <Field label="Escalate or refer this account?">
-        <Select
-          value={value}
-          onChange={onChange}
-          placeholder="Select..."
-          options={ESCALATION_OPTIONS}
-          filled={value === 'Yes, escalate or refer'}
-        />
-      </Field>
+      <div>
+        <p className="text-sm text-zinc-600 mb-2">Escalate or refer this account?</p>
+        <Toggle value={value} onChange={onChange} />
+      </div>
 
-      {value === 'Yes, escalate or refer' && (
+      {value && (
         <div>
           <p className="text-sm font-medium text-zinc-700 mb-1">
             Add additional associated accounts (optional)
@@ -204,117 +196,66 @@ function EscalationStep({ value, onChange }: { value: string; onChange: (v: stri
 
 // ─── Step 3: Adverse Actions ──────────────────────────────────────────────────
 
+const REVOKE_REASONS = [
+  'Successful appeal — identity verified',
+  'Incorrect association / mistaken identity',
+  'Insufficient evidence of wrongdoing',
+  'Account activity consistent with legitimate use',
+]
+
 function AdverseActionsStep({
   apply, onApply,
   meiAction, onMeiAction,
-  ssnAction, onSsnAction,
-  xiaoAction, onXiaoAction,
+  meiRevokeReason, onMeiRevokeReason,
 }: {
-  apply: boolean; onApply: (v: boolean) => void
+  apply: boolean | null; onApply: (v: boolean) => void
   meiAction: string; onMeiAction: (v: string) => void
-  ssnAction: string; onSsnAction: (v: string) => void
-  xiaoAction: string; onXiaoAction: (v: string) => void
+  meiRevokeReason: string; onMeiRevokeReason: (v: string) => void
 }) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm text-zinc-600 mb-2">Do you want to apply adverse actions?</p>
+        <p className="text-sm text-zinc-600 mb-2">Do you want to revoke an existing adversity?</p>
         <Toggle value={apply} onChange={onApply} />
       </div>
 
-      {apply && (
-        <>
-          {/* Appealing Account — Mei Chen */}
-          <div>
-            <p className="text-sm text-zinc-500 mb-2">Appealing Account</p>
-            <div className="border border-zinc-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-sm font-medium text-zinc-800">Mei Chen</div>
-                  <span className="font-mono text-xs text-zinc-500">C_r4xw8mhkq · AH_m3xw8rkhq</span>
-                </div>
-                <span className="text-2xs font-bold text-red-600 uppercase tracking-widest shrink-0">DENYLISTED</span>
+      {apply === true && (
+        <div>
+          <p className="text-sm text-zinc-500 mb-2">Alerted Account</p>
+          <div className="border border-zinc-200 rounded-xl p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-sm font-medium text-zinc-800">Mei Chen</div>
+                <span className="font-mono text-xs text-zinc-500">C_r4xw8mhkq</span>
               </div>
-              <p className="text-xs text-zinc-500">Account-level Rise Scam denylist</p>
-              <Field label="Select action">
-                <Select
-                  value={meiAction}
-                  onChange={onMeiAction}
-                  placeholder="Select..."
-                  options={['Revoke denylist', 'No change']}
-                  filled={meiAction === 'Revoke denylist'}
-                />
-              </Field>
+              <span className="text-2xs font-bold text-red-600 uppercase tracking-widest shrink-0">DENYLISTED</span>
             </div>
-          </div>
-
-          {/* Shared Identity Evidence */}
-          <div>
-            <p className="text-sm text-zinc-500 mb-2">Shared Identity Evidence</p>
-            <div className="border border-zinc-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-sm font-medium text-zinc-800">SSN ending 6892</div>
-                  <span className="font-mono text-xs text-zinc-500">Shared with Xiao Liu · ....a3f2c8d1</span>
-                </div>
-                <span className="text-2xs font-bold text-red-600 uppercase tracking-widest shrink-0">DENYLISTED</span>
-              </div>
-              <p className="text-xs text-zinc-500">Rise Scam denylist</p>
-              <Field label="Select action">
-                <Select
-                  value={ssnAction}
-                  onChange={onSsnAction}
-                  placeholder="Select..."
-                  options={['No change', 'Revoke denylist']}
-                  filled={ssnAction === 'Revoke denylist'}
-                />
-              </Field>
-              <p className="text-xs text-zinc-400">
-                This identity signal remains restricted because it is also associated with a connected suspicious account.
-              </p>
+            <div className="text-xs text-zinc-500 space-y-0.5">
+              <div><span className="text-zinc-400">Current state:</span> Denylisted</div>
+              <div><span className="text-zinc-400">Active adversity:</span> Account-level scam denylist</div>
             </div>
-          </div>
-
-          {/* SSN-Connected Account — Xiao Liu */}
-          <div>
-            <p className="text-sm text-zinc-500 mb-2">SSN-Connected Account</p>
-            <div className="border border-zinc-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-sm font-medium text-zinc-800">Xiao Liu</div>
-                  <span className="font-mono text-xs text-zinc-500">C_2nj8wk1dv · Shared SSN · Device</span>
-                </div>
-                <span className="text-2xs font-bold text-red-600 uppercase tracking-widest shrink-0">DENYLISTED</span>
-              </div>
-              <p className="text-xs text-zinc-500">Money Mule — Coordinated Network denylist</p>
-              <Field label="Select action">
-                <Select
-                  value={xiaoAction}
-                  onChange={onXiaoAction}
-                  placeholder="Select..."
-                  options={['No change', 'Revoke denylist']}
-                  filled={xiaoAction === 'Revoke denylist'}
-                />
-              </Field>
-              <p className="text-xs text-zinc-400">
-                This account has independent concerning activity and is not part of the appeal reversal.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-zinc-700 mb-0.5">Add additional accounts</p>
-            <p className="text-xs text-zinc-500 mb-2">Add other customer tokens to apply the same adversity</p>
-            <div className="flex gap-2">
-              <textarea
-                className="flex-1 px-3 py-2 text-sm border border-zinc-200 rounded-xl resize-none h-20 focus:outline-none focus:ring-2 focus:ring-brand/20"
+            <Field label="Select action">
+              <Select
+                value={meiAction}
+                onChange={onMeiAction}
+                placeholder="Select..."
+                options={['No change', 'Revoke denylist']}
+                filled={meiAction === 'Revoke denylist'}
               />
-              <button className="self-end text-sm text-zinc-400 hover:text-zinc-700 px-2 whitespace-nowrap">
-                + Add
-              </button>
-            </div>
+            </Field>
+            {meiAction === 'Revoke denylist' && (
+              <Field label="Revocation reason">
+                <Select
+                  value={meiRevokeReason}
+                  onChange={onMeiRevokeReason}
+                  placeholder="Select reason..."
+                  options={REVOKE_REASONS}
+                  filled={!!meiRevokeReason}
+                />
+              </Field>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   )
