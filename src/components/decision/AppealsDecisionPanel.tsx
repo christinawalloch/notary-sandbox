@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Clock, ChevronUp } from 'lucide-react'
 import clsx from 'clsx'
 import { Toggle } from '../ui/Toggle'
@@ -29,8 +29,15 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
   const [applyChanges, setApplyChanges] = useState<boolean | null>(n >= 3 ? true : null)
   const [meiAction, setMeiAction] = useState(n >= 3 ? 'Revoke denylist' : '')
   const [meiRevokeReason, setMeiRevokeReason] = useState(n >= 3 ? 'Successful appeal — identity verified' : '')
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [comment, setComment] = useState('')
 
   const activeIdx = STEPS.findIndex(s => s.id === stepId)
+  const isLast = activeIdx === STEPS.length - 1
+
+  useEffect(() => {
+    if (isLast) setSummaryOpen(true)
+  }, [isLast])
 
   const isNextDisabled =
     (stepId === 'appeal-decision' && appealIsOverturn === null) ||
@@ -47,7 +54,6 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
     if (activeIdx > 0) setStepId(STEPS[activeIdx - 1].id)
   }
 
-  const isLast = activeIdx === STEPS.length - 1
   const ctaLabel = isLast
     ? (appealIsOverturn ? 'Submit for L2 Review' : 'Submit Decision')
     : 'Next'
@@ -116,17 +122,33 @@ export function AppealsDecisionPanel({ onClose, previewStep }: AppealsDecisionPa
 
       {/* Footer */}
       <div className="bg-zinc-50 border-t border-zinc-200">
-        <button className="w-full flex items-center justify-between px-5 py-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
+        <button
+          onClick={() => setSummaryOpen(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
+        >
           Investigation Summary*
-          <ChevronUp size={14} className="text-zinc-400" />
+          <ChevronUp size={14} className={clsx('text-zinc-400 transition-transform', !summaryOpen && 'rotate-180')} />
         </button>
+        {summaryOpen && (
+          <div className="px-5 pb-3">
+            <label className="block text-sm text-zinc-500 mb-1.5">
+              Comment <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Add investigation notes..."
+              className="w-full h-28 px-3 py-2 text-sm border border-zinc-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand/20 placeholder:text-zinc-400"
+            />
+          </div>
+        )}
         <div className="flex items-center gap-3 px-5 pb-4">
           <button
-            onClick={isNextDisabled ? undefined : (isLast ? () => alert('Decision submitted!') : goNext)}
-            disabled={isNextDisabled}
+            onClick={isNextDisabled || (isLast && !comment.trim()) ? undefined : (isLast ? () => alert('Decision submitted!') : goNext)}
+            disabled={isNextDisabled || (isLast && !comment.trim())}
             className={clsx(
               'px-5 py-2 text-sm font-semibold rounded-lg transition-colors shadow-sm',
-              isNextDisabled
+              isNextDisabled || (isLast && !comment.trim())
                 ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed shadow-none'
                 : 'bg-brand hover:bg-brand-600 text-white'
             )}

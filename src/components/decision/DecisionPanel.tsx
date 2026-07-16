@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Clock, ChevronUp } from 'lucide-react'
 import clsx from 'clsx'
 import { Toggle } from '../ui/Toggle'
@@ -17,7 +17,14 @@ interface DecisionPanelProps {
 
 export function DecisionPanel({ assignmentId: _assignmentId, accountToken, onClose }: DecisionPanelProps) {
   const [stepId, setStepId] = useState('disposition')
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [comment, setComment] = useState('')
   const activeIdx = STEPS.findIndex(s => s.id === stepId)
+  const isLast = activeIdx === STEPS.length - 1
+
+  useEffect(() => {
+    if (isLast) setSummaryOpen(true)
+  }, [isLast])
 
   const goNext = () => {
     if (activeIdx < STEPS.length - 1) setStepId(STEPS[activeIdx + 1].id)
@@ -25,6 +32,8 @@ export function DecisionPanel({ assignmentId: _assignmentId, accountToken, onClo
   const goBack = () => {
     if (activeIdx > 0) setStepId(STEPS[activeIdx - 1].id)
   }
+
+  const isSubmitDisabled = isLast && !comment.trim()
 
   return (
     <div className="w-[500px] shrink-0 border-l border-zinc-200 bg-white flex flex-col h-full overflow-hidden">
@@ -85,19 +94,39 @@ export function DecisionPanel({ assignmentId: _assignmentId, accountToken, onClo
 
       {/* Footer */}
       <div className="bg-zinc-50 border-t border-zinc-200">
-        <button className="w-full flex items-center justify-between px-5 py-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
+        <button
+          onClick={() => setSummaryOpen(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
+        >
           Investigation Summary*
-          <ChevronUp size={14} className="text-zinc-400" />
+          <ChevronUp size={14} className={clsx('text-zinc-400 transition-transform', !summaryOpen && 'rotate-180')} />
         </button>
+        {summaryOpen && (
+          <div className="px-5 pb-3">
+            <label className="block text-sm text-zinc-500 mb-1.5">
+              Comment <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Add investigation notes..."
+              className="w-full h-28 px-3 py-2 text-sm border border-zinc-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand/20 placeholder:text-zinc-400"
+            />
+          </div>
+        )}
         <div className="flex items-center gap-3 px-5 pb-4">
-          {/* Primary button */}
           <button
-            onClick={activeIdx === STEPS.length - 1 ? () => alert('Decision submitted!') : goNext}
-            className="px-5 py-2 bg-brand hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+            onClick={isLast ? (isSubmitDisabled ? undefined : () => alert('Decision submitted!')) : goNext}
+            disabled={isSubmitDisabled}
+            className={clsx(
+              'px-5 py-2 text-sm font-semibold rounded-lg transition-colors shadow-sm',
+              isSubmitDisabled
+                ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed shadow-none'
+                : 'bg-brand hover:bg-brand-600 text-white'
+            )}
           >
-            {activeIdx === STEPS.length - 1 ? 'Submit' : 'Next'}
+            {isLast ? 'Submit' : 'Next'}
           </button>
-          {/* Tertiary: text-only */}
           {activeIdx > 0 && (
             <button onClick={goBack} className="text-sm text-zinc-500 hover:text-zinc-800 transition-colors font-medium">
               Back
