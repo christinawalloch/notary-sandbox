@@ -13,9 +13,6 @@ export function TopNav() {
           </svg>
         </div>
         <span className="font-bold text-base text-zinc-900 tracking-tight">Notary</span>
-        <span className="text-[9px] font-bold bg-brand-100 text-brand-700 px-1 py-0.5 rounded tracking-widest uppercase">
-          SANDBOX
-        </span>
       </div>
 
       {/* Search */}

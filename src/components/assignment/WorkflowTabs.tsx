@@ -9,7 +9,7 @@ interface WorkflowTabsProps {
 
 export function WorkflowTabs({ tabs, activeTab, onTabChange }: WorkflowTabsProps) {
   return (
-    <div className="flex border-b border-zinc-200 px-5 shrink-0">
+    <div className="flex border-b border-zinc-200 mx-6 shrink-0">
       {tabs.map(tab => (
         <button
           key={tab.id}

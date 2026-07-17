@@ -25,9 +25,9 @@ const COLS = ['DATE', 'TYPE', 'DIRECTION', 'AMOUNT', 'COUNTERPARTY', 'NOTE', 'ST
 
 export function TransactionSearch({ transactions, accountId }: { transactions: Transaction[]; accountId: string }) {
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">
+    <div className="bg-white rounded-xl border border-zinc-200 px-4 pt-3 pb-4">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-2">
         <h3 className="text-sm font-semibold text-zinc-900">Transaction Search</h3>
         <span className="inline-flex text-2xs font-semibold px-1.5 py-0.5 rounded border bg-violet-50 text-violet-600 border-violet-200 uppercase tracking-wide">
           Beta

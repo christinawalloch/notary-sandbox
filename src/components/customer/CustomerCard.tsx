@@ -6,7 +6,7 @@ export function CustomerCard({ customer }: { customer: Account }) {
   const [showDetails, setShowDetails] = useState(false)
 
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">
+    <div className="bg-white rounded-xl border border-zinc-200 px-4 pt-3 pb-4">
       <div className="flex items-start justify-between gap-6">
         {/* Left: customer info */}
         <div className="flex-1 min-w-0">

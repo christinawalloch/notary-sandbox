@@ -25,10 +25,17 @@ export interface WorkflowConfig {
   title: string;
   showAIInsights: boolean;
   aiInsightsDepth: AIDepth;
+  aiInsightsPosition?: 'tab' | 'inline';
   showAccountSelector: boolean;
   accountMode: AccountMode;
   showDenylistInfo: boolean;
+  showDenylistBadge?: boolean;
+  showAssets?: boolean;
   showAlerts: boolean;
+  showTransactionsInline?: boolean;
+  showAlertsAtTop?: boolean;
+  showAssignmentActivity?: boolean;
+  collapseAccountByDefault?: boolean;
   decisionVariant: DecisionVariant;
   tabs: TabConfig[];
   navItems: NavItem[];
@@ -43,6 +50,8 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
     showAccountSelector: true,
     accountMode: 'single',
     showDenylistInfo: true,
+    showDenylistBadge: true,
+    showAssets: true,
     showAlerts: false,
     decisionVariant: 'appeals',
     tabs: [
@@ -79,27 +88,85 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
     ],
   },
 
+  'global-appeals-scam-v0': {
+    id: 'global-appeals-scam-v0',
+    title: 'Global Appeals Scam V0',
+    showAIInsights: false,
+    aiInsightsDepth: 'none',
+    showAccountSelector: true,
+    accountMode: 'single',
+    showDenylistInfo: false,
+    showDenylistBadge: false,
+    showAssets: false,
+    showAlerts: false,
+    decisionVariant: 'appeals',
+    tabs: [
+      { id: 'overview', label: 'Overview' },
+      { id: 'money', label: 'Money' },
+      { id: 'conversation', label: 'Conversation' },
+    ],
+    navItems: [
+      { id: 'assignment', label: 'Assignment' },
+      { id: 'customer-info', label: 'Customer Info' },
+      {
+        id: 'account', label: 'Account',
+        children: [
+          { id: 'account-details', label: 'Account Details' },
+          { id: 'adversity-history', label: 'Adversity History' },
+          { id: 'idv-attempts', label: 'IDV Attempts' },
+          { id: 'government-id', label: 'Government ID' },
+        ],
+      },
+      {
+        id: 'money', label: 'Money',
+        children: [
+          { id: 'transaction-search', label: 'Transaction Search' },
+        ],
+      },
+      {
+        id: 'conversation', label: 'Conversation',
+        children: [
+          { id: 'email-history', label: 'Email History' },
+        ],
+      },
+    ],
+  },
+
   'scams-l1': {
     id: 'scams-l1',
     title: 'Scams L1',
     showAIInsights: true,
     aiInsightsDepth: 'l1',
-    showAccountSelector: false,
+    aiInsightsPosition: 'inline',
+    showAccountSelector: true,
     accountMode: 'single',
     showDenylistInfo: false,
+    showDenylistBadge: false,
+    showAssets: true,
     showAlerts: true,
+    showAlertsAtTop: true,
+    showTransactionsInline: true,
+    showAssignmentActivity: true,
+    collapseAccountByDefault: true,
     decisionVariant: 'scams-l1',
     tabs: [
-      { id: 'ai-insights', label: 'AI Insights' },
-      { id: 'account', label: 'Customer' },
-      { id: 'alerts', label: 'Alerts' },
+      { id: 'overview', label: 'Overview' },
     ],
     navItems: [
-      { id: 'assignment', label: 'Assignment' },
       { id: 'ai-insights', label: 'AI Insights' },
-      { id: 'customer', label: 'Customer' },
+      { id: 'customer-info', label: 'Customer' },
+      {
+        id: 'account', label: 'Account',
+        children: [
+          { id: 'account-details', label: 'Account Details' },
+          { id: 'assets', label: 'Assets & Identifiers' },
+          { id: 'adversity-history', label: 'Adversity History' },
+          { id: 'idv-attempts', label: 'IDV Attempts' },
+          { id: 'government-id', label: 'Government ID' },
+        ],
+      },
+      { id: 'transaction-search', label: 'Transactions' },
       { id: 'alerts', label: 'Alerts' },
-      { id: 'timeline', label: 'Timeline' },
     ],
   },
 
@@ -108,24 +175,36 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
     title: 'Scams L2',
     showAIInsights: true,
     aiInsightsDepth: 'l2',
+    aiInsightsPosition: 'inline',
     showAccountSelector: true,
     accountMode: 'single',
     showDenylistInfo: false,
+    showDenylistBadge: false,
+    showAssets: true,
     showAlerts: true,
+    showAlertsAtTop: true,
+    showTransactionsInline: true,
+    showAssignmentActivity: true,
+    collapseAccountByDefault: true,
     decisionVariant: 'scams-l2',
     tabs: [
-      { id: 'ai-insights', label: 'AI Insights' },
-      { id: 'account', label: 'Account' },
-      { id: 'transactions', label: 'Transactions' },
-      { id: 'alerts', label: 'Alerts' },
+      { id: 'overview', label: 'Overview' },
     ],
     navItems: [
-      { id: 'assignment', label: 'Assignment' },
       { id: 'ai-insights', label: 'AI Insights' },
-      { id: 'customer', label: 'Customer' },
-      { id: 'transactions', label: 'Transactions' },
+      { id: 'customer-info', label: 'Customer' },
+      {
+        id: 'account', label: 'Account',
+        children: [
+          { id: 'account-details', label: 'Account Details' },
+          { id: 'assets', label: 'Assets & Identifiers' },
+          { id: 'adversity-history', label: 'Adversity History' },
+          { id: 'idv-attempts', label: 'IDV Attempts' },
+          { id: 'government-id', label: 'Government ID' },
+        ],
+      },
+      { id: 'transaction-search', label: 'Transactions' },
       { id: 'alerts', label: 'Alerts' },
-      { id: 'timeline', label: 'Timeline' },
     ],
   },
 

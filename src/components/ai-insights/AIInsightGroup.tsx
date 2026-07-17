@@ -1,91 +1,109 @@
 import { useState } from 'react'
-import clsx from 'clsx'
-import { ChevronDown, ChevronRight, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { ChevronDown, ChevronRight, Copy } from 'lucide-react'
 import type { AIInsightGroup as AIInsightGroupType } from '../../data/mock'
 
-const BADGE_STYLES: Record<string, string> = {
-  flagged: 'bg-red-100 text-red-700 border-red-200',
-  clear:   'bg-green-100 text-green-700 border-green-200',
-  info:    'bg-blue-100 text-blue-700 border-blue-200',
-}
-
-const GROUP_STYLES: Record<string, { header: string; dot: string }> = {
-  'Needs Review':     { header: 'text-zinc-700', dot: 'bg-amber-400' },
-  'Adverse Signals':  { header: 'text-zinc-700', dot: 'bg-red-400' },
-  'Mitigating Signals': { header: 'text-zinc-700', dot: 'bg-green-400' },
+const GROUP_CONFIG: Record<string, {
+  border: string
+  titleClass: string
+  countBadge: boolean
+}> = {
+  'Needs Review':       { border: 'border-zinc-200', titleClass: 'font-semibold text-zinc-900', countBadge: false },
+  'Adverse Signals':    { border: 'border-red-200',  titleClass: 'font-semibold text-zinc-900', countBadge: true  },
+  'Mitigating Signals': { border: 'border-zinc-200', titleClass: 'font-medium text-zinc-400',   countBadge: false },
 }
 
 export function AIInsightGroup({ group }: { group: AIInsightGroupType }) {
-  const [open, setOpen] = useState(true)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set([group.items[0]?.id]))
-  const style = GROUP_STYLES[group.title] ?? GROUP_STYLES['Needs Review']
+  const [open, setOpen] = useState(group.defaultOpen ?? false)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
-  const toggleItem = (id: string) =>
-    setExpanded(prev => {
+  const cfg = GROUP_CONFIG[group.title] ?? GROUP_CONFIG['Needs Review']
+  const allExpanded = group.items.length > 0 && group.items.every(i => expandedRows.has(i.id))
+
+  const toggleRow = (id: string) =>
+    setExpandedRows(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
 
-  return (
-    <div className="mb-1">
-      {/* Group header */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-2 px-4 py-2 hover:bg-zinc-50 transition-colors text-left"
-      >
-        <span className={clsx('w-2 h-2 rounded-full shrink-0', style.dot)} />
-        <span className={clsx('text-xs font-semibold', style.header)}>{group.title}</span>
-        <span className="text-xs text-zinc-400 font-normal">{group.count}</span>
-        <span className="ml-auto text-zinc-400">
-          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </span>
-      </button>
+  const toggleAll = () => {
+    if (allExpanded) {
+      setExpandedRows(new Set())
+    } else {
+      setExpandedRows(new Set(group.items.map(i => i.id)))
+    }
+  }
 
+  return (
+    <div className={`bg-white rounded-xl border ${cfg.border} overflow-hidden`}>
+      {/* Group header row */}
+      <div className="flex items-center gap-2 px-4 py-3">
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="flex items-center gap-2 flex-1 min-w-0 text-left"
+        >
+          {open
+            ? <ChevronDown size={13} className="text-zinc-400 shrink-0" />
+            : <ChevronRight size={13} className="text-zinc-400 shrink-0" />}
+          <span className={`text-sm ${cfg.titleClass}`}>{group.title}</span>
+          {cfg.countBadge ? (
+            <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-red-100 text-red-600 text-[11px] font-semibold rounded-full leading-none">
+              {group.count}
+            </span>
+          ) : (
+            <span className="text-sm text-zinc-400">{group.count}</span>
+          )}
+        </button>
+        {open && (
+          <button
+            onClick={toggleAll}
+            className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors shrink-0"
+          >
+            {allExpanded ? 'Collapse all' : 'Expand all'}
+          </button>
+        )}
+      </div>
+
+      {/* Items */}
       {open && (
-        <div className="divide-y divide-zinc-100">
+        <div className="border-t border-zinc-100 divide-y divide-zinc-50">
           {group.items.map(item => {
-            const isOpen = expanded.has(item.id)
+            const isOpen = expandedRows.has(item.id)
+            const hasDetail = !!(item.detailText || item.detailBullets?.length)
             return (
-              <div key={item.id} className="px-4 py-2.5">
-                <div className="flex items-start gap-2">
-                  <button
-                    onClick={() => toggleItem(item.id)}
-                    className="mt-0.5 text-zinc-400 hover:text-zinc-600 shrink-0"
-                  >
-                    {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-zinc-800">{item.label}</span>
-                      {item.badge && item.badgeLabel && (
-                        <span className={clsx(
-                          'text-2xs font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide',
-                          BADGE_STYLES[item.badge] ?? BADGE_STYLES.info
-                        )}>
-                          {item.badgeLabel}
-                        </span>
-                      )}
-                      {isOpen && (
-                        <p className="text-xs text-zinc-600 mt-0.5 leading-relaxed">
-                          {item.finding}
-                        </p>
+              <div key={item.id} className="flex items-start gap-2 px-4 py-2.5">
+                <button
+                  onClick={() => hasDetail && toggleRow(item.id)}
+                  className={`mt-0.5 shrink-0 transition-colors ${hasDetail ? 'text-zinc-400 hover:text-zinc-600 cursor-pointer' : 'text-zinc-200 cursor-default'}`}
+                >
+                  {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs leading-relaxed">
+                    <span className="font-semibold text-zinc-800">{item.label}</span>
+                    <span className="text-zinc-400"> — </span>
+                    <span className="text-zinc-500">{item.finding}</span>
+                  </p>
+                  {isOpen && hasDetail && (
+                    <div className="mt-2 px-3 py-2.5 bg-zinc-50 rounded-lg border border-zinc-100 text-xs text-zinc-600 leading-relaxed">
+                      {item.detailText && <p className={item.detailBullets?.length ? 'mb-2' : ''}>{item.detailText}</p>}
+                      {item.detailBullets && (
+                        <ul className="space-y-1">
+                          {item.detailBullets.map((b, i) => <li key={i}>• {b}</li>)}
+                        </ul>
                       )}
                     </div>
-                    {!isOpen && (
-                      <p className="text-xs text-zinc-500 truncate mt-0.5">{item.finding}</p>
-                    )}
-                    {isOpen && item.evidenceDetail && (
-                      <p className="text-2xs text-zinc-400 mt-1 italic">{item.evidenceDetail}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <button className="w-6 h-6 flex items-center justify-center text-zinc-300 hover:text-green-500 transition-colors rounded hover:bg-zinc-100">
-                      <ThumbsUp size={12} />
-                    </button>
-                    <button className="w-6 h-6 flex items-center justify-center text-zinc-300 hover:text-red-500 transition-colors rounded hover:bg-zinc-100">
-                      <ThumbsDown size={12} />
-                    </button>
+                  )}
+                </div>
+                <div className="relative group shrink-0">
+                  <button
+                    onClick={() => navigator.clipboard.writeText(`${item.label} — ${item.finding}`)}
+                    className="w-6 h-6 flex items-center justify-center text-zinc-300 hover:text-zinc-500 transition-colors"
+                  >
+                    <Copy size={11} />
+                  </button>
+                  <div className="absolute top-full right-0 mt-1.5 px-2 py-1 bg-zinc-800 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                    Copy
                   </div>
                 </div>
               </div>

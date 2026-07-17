@@ -7,11 +7,12 @@ interface AssignmentHeaderProps {
   ctaLabel: 'Claim' | 'Decide'
   onCTA: () => void
   claimed?: boolean
+  completed?: boolean
 }
 
-export function AssignmentHeader({ assignment, ctaLabel, onCTA, claimed = false }: AssignmentHeaderProps) {
+export function AssignmentHeader({ assignment, ctaLabel, onCTA, claimed = false, completed = false }: AssignmentHeaderProps) {
   return (
-    <div className="px-6 pt-2 pb-1 shrink-0">
+    <div className="px-6 pt-2 pb-4 shrink-0">
       {/* Title row */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -22,8 +23,8 @@ export function AssignmentHeader({ assignment, ctaLabel, onCTA, claimed = false 
             <Link2 size={13} />
           </button>
           <Badge
-            variant={claimed ? 'claimed' : statusToBadgeVariant(assignment.status)}
-            label={claimed ? 'IN PROGRESS' : assignment.status.toUpperCase()}
+            variant={completed ? 'active' : claimed ? 'claimed' : statusToBadgeVariant(assignment.status)}
+            label={completed ? 'COMPLETED' : claimed ? 'IN PROGRESS' : assignment.status.toUpperCase()}
           />
         </div>
 
@@ -52,7 +53,7 @@ export function AssignmentHeader({ assignment, ctaLabel, onCTA, claimed = false 
       </div>
 
       {/* Meta row — labels black/near-black, values slightly lighter */}
-      <div className="flex items-center flex-wrap gap-x-5 gap-y-0.5 mt-1.5 text-xs">
+      <div className="flex items-center flex-wrap gap-x-5 gap-y-0.5 mt-0.5 text-xs">
         <span>
           <span className="font-medium text-zinc-900">Created</span>{' '}
           <span className="text-zinc-500">{assignment.createdAt}</span>{' '}

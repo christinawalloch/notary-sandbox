@@ -24,7 +24,7 @@ const GRID = 'grid-cols-[110px_130px_140px_110px_100px_100px_1fr]'
 export function IDVAttempts({ attempts, standalone }: { attempts: IDVAttempt[]; standalone?: boolean }) {
   const inner = (
     <>
-      <div className="mb-3">
+      <div className="mb-2">
         <h3 className="text-sm font-semibold text-zinc-900">IDV Attempts</h3>
         <p className="text-xs text-zinc-500 mt-0.5">
           Identity verification attempts associated with this account.
@@ -73,7 +73,7 @@ export function IDVAttempts({ attempts, standalone }: { attempts: IDVAttempt[]; 
   )
 
   if (standalone) {
-    return <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">{inner}</div>
+    return <div className="bg-white rounded-xl border border-zinc-200 px-4 pt-3 pb-4">{inner}</div>
   }
   return <div>{inner}</div>
 }

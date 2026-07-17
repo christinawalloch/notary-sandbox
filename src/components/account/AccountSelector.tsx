@@ -25,9 +25,10 @@ interface AccountSelectorProps {
   connectedSubjects?: ConnectedAccount[]
   selectedId: string
   onSelect: (id: string) => void
+  hideDenylistBadge?: boolean
 }
 
-export function AccountSelector({ primarySubject, connectedSubjects = [], selectedId, onSelect }: AccountSelectorProps) {
+export function AccountSelector({ primarySubject, connectedSubjects = [], selectedId, onSelect, hideDenylistBadge = false }: AccountSelectorProps) {
   const [activeFilters, setActiveFilters] = useState<string[]>([])
 
   const toggle = (f: string) =>
@@ -64,7 +65,7 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
         Primary Subject
       </div>
       <label className={clsx(
-        'flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors',
+        'flex items-center gap-3 px-4 py-2.5 rounded-xl border cursor-pointer transition-colors',
         selectedId === primarySubject.id
           ? 'border-brand bg-green-50'
           : 'border-zinc-200 bg-white hover:border-zinc-300'
@@ -73,10 +74,10 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
           checked={selectedId === primarySubject.id} onChange={() => onSelect(primarySubject.id)}
           className="sr-only" />
         <RadioDot active={selectedId === primarySubject.id} />
-        <Avatar name={primarySubject.displayName} color={primarySubject.avatarColor} />
+        <Avatar name={primarySubject.displayName} color={primarySubject.avatarColor} size="sm" />
         <span className="font-mono text-xs text-brand">{primarySubject.id}</span>
         <span className="text-sm font-medium text-zinc-900">{primarySubject.displayName}</span>
-        {primarySubject.status === 'denylisted' && (
+        {!hideDenylistBadge && primarySubject.status === 'denylisted' && (
           <span className="relative ml-1 group">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-red-200 bg-red-50 text-2xs font-bold text-red-600 uppercase tracking-wide cursor-default transition-all hover:bg-red-100 hover:border-red-300">
               DENYLISTED
@@ -108,7 +109,7 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
       {connectedSubjects.length > 0 && (
         <div className="mt-4">
           <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5 mb-2">
-            <span className="text-xs font-semibold text-zinc-700">
+            <span className="text-2xs font-semibold text-zinc-500 uppercase tracking-widest">
               Connected Subjects ({connectedSubjects.length})
             </span>
             <span className="text-xs text-zinc-400">Shared Assets</span>
@@ -144,11 +145,11 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
                 <RadioDot active={selectedId === subject.id} />
                 <Avatar name={subject.displayName} color={subject.avatarColor} size="sm" />
                 <span className="font-mono text-xs text-brand">{subject.id}</span>
-                <span className="text-sm text-zinc-800">{subject.displayName}</span>
+                <span className="text-sm font-medium text-zinc-900">{subject.displayName}</span>
                 {subject.verified && (
                   <span className="text-2xs text-brand font-medium">VERIFIED</span>
                 )}
-                {subject.status === 'denylisted' && (
+                {!hideDenylistBadge && subject.status === 'denylisted' && (
                   <span className="relative group">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-red-200 bg-red-50 text-2xs font-bold text-red-600 uppercase tracking-wide cursor-default transition-all hover:bg-red-100 hover:border-red-300">
                       DENYLISTED

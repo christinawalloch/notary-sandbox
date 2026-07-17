@@ -12,6 +12,7 @@ body {
   color: #111827;
   background: #f3f4f6;
   -webkit-font-smoothing: antialiased;
+  overflow-y: scroll;
 }
 
 #root { width: 100%; min-height: 100vh; }

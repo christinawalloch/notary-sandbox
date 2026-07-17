@@ -100,7 +100,7 @@ export function GovernmentIDImages({ accountId, standalone }: { accountId: strin
 
   const inner = (
     <>
-      <div className="mb-3">
+      <div className="mb-2">
         <h3 className="text-sm font-semibold text-zinc-900">Government ID Images</h3>
         <p className="text-xs text-zinc-500 mt-0.5">
           Identity documents submitted during verification.
@@ -125,7 +125,7 @@ export function GovernmentIDImages({ accountId, standalone }: { accountId: strin
   )
 
   if (standalone) {
-    return <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">{inner}</div>
+    return <div className="bg-white rounded-xl border border-zinc-200 px-4 pt-3 pb-4">{inner}</div>
   }
   return <div>{inner}</div>
 }

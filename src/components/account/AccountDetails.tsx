@@ -9,7 +9,7 @@ export function AccountDetails({ account, expandedContent, defaultExpanded }: { 
 
   return (
     <div className="pt-4 mt-4 border-t border-zinc-100">
-      <h3 className="text-sm font-semibold text-zinc-900 mb-3">Account Details</h3>
+      <h3 className="text-sm font-semibold text-zinc-900 mb-2">Account Details</h3>
 
       {/* Inline fields row 1 */}
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs mb-1.5">

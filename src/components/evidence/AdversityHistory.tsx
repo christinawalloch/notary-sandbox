@@ -33,7 +33,7 @@ const GRID = 'grid-cols-[150px_80px_110px_1fr_110px_150px_170px_80px]'
 export function AdversityHistory({ records, standalone }: { records: AdversityRecord[]; standalone?: boolean }) {
   const content = (
     <>
-      <div className="mb-3">
+      <div className="mb-2">
         <h3 className="text-sm font-semibold text-zinc-900">Adversity History</h3>
         <p className="text-xs text-zinc-500 mt-0.5">
           Guardrails Adversities include denylists, strikes, and warnings.
@@ -90,7 +90,7 @@ export function AdversityHistory({ records, standalone }: { records: AdversityRe
 
   if (standalone) {
     return (
-      <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">
+      <div className="bg-white rounded-xl border border-zinc-200 px-4 pt-3 pb-4">
         {content}
       </div>
     )

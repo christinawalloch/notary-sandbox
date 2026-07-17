@@ -1,14 +1,32 @@
 import type { DenylistInfo as DenylistInfoType } from '../../data/mock'
 
+function AppealSourceValue({ value }: { value: string }) {
+  const parts = value.split(/(\s*·\s*)/)
+  return (
+    <span className="text-zinc-500">
+      {parts.map((part, i) => {
+        if (/CF1 case #\S+/i.test(part)) {
+          return (
+            <a key={i} href="#" className="text-brand hover:underline" onClick={e => e.preventDefault()}>
+              {part}
+            </a>
+          )
+        }
+        return <span key={i}>{part}</span>
+      })}
+    </span>
+  )
+}
+
 export function DenylistInfo({ info }: { info: DenylistInfoType }) {
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl px-5 py-4">
-      <h3 className="text-sm font-semibold text-zinc-900 mb-3">Appeal Context</h3>
+    <div className="bg-white border border-zinc-200 rounded-xl px-4 pt-2 pb-4">
+      <h3 className="text-sm font-semibold text-zinc-900 mb-1">Appeal Context</h3>
       <div>
         <div className="flex items-center flex-wrap gap-x-5 gap-y-0.5 text-xs">
           <span>
             <span className="font-medium text-zinc-900">Appeal source</span>{' '}
-            <span className="text-zinc-500">{info.appealSource}</span>
+            <AppealSourceValue value={info.appealSource} />
           </span>
           <span>
             <span className="font-medium text-zinc-900">Routing reason</span>{' '}

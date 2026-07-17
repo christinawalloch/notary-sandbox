@@ -123,8 +123,8 @@ function EmailRow({ email }: { email: Email }) {
 
 export function ConversationHistory() {
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 px-5 py-4">
-      <h3 className="text-sm font-semibold text-zinc-900 mb-4">Conversation history</h3>
+    <div className="bg-white rounded-xl border border-zinc-200 px-4 pt-3 pb-4">
+      <h3 className="text-sm font-semibold text-zinc-900 mb-3">Conversation history</h3>
 
       <div>
         <div className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-2">
