@@ -224,10 +224,16 @@ export function AIInsightsPanel({ groups, depth = 'l1' }: AIInsightsPanelProps) 
 
   // Grouped variant (L2, SAR)
   return (
-    <div className="space-y-2">
-      {groups.map(group => (
-        <AIInsightGroup key={group.id} group={group} />
-      ))}
+    <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <span className="text-base font-bold text-zinc-900">AI Insights</span>
+        <span className="text-xs text-zinc-400">Last updated 3 min ago</span>
+      </div>
+      <div className="px-3 pb-3 space-y-2">
+        {groups.map(group => (
+          <AIInsightGroup key={group.id} group={group} structuredFeedback={depth === 'l2'} />
+        ))}
+      </div>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import { Maximize2, Copy, ExternalLink, X, Link2, User } from 'lucide-react'
+import { NPIDLineageModal } from './NPIDLineageModal'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,7 @@ interface GraphNode {
   inCluster: boolean
   status: 'active' | 'suspended'
   holder?: string
+  holderLabel?: string   // overrides node.label in the AH banner when the node isn't the holder itself
   accountCount?: number
   // external = connected via a shared signal but belongs to a different NPID or none
   external?: boolean
@@ -24,8 +26,8 @@ interface GraphNode {
 const NODES: GraphNode[] = [
   // ── Accounts inside NPID_123456 ──────────────────────────────────────────────
   { id: 'john-doe',     label: 'John Doe',    token: 'c_8hpfrgye4', type: 'personal', cx: 400, cy: 105, inCluster: true,  status: 'active',    holder: 'AH_jdoe_001', accountCount: 2 },
-  { id: 'j-doe',        label: 'J. Doe',       token: 'c_5rlj8b34',  type: 'personal', cx: 190, cy: 355, inCluster: false, status: 'active' },
-  { id: 'john-doe-llc', label: 'John Doe LLC', token: 'c_3kmt7wx92', type: 'business', cx: 625, cy: 360, inCluster: false, status: 'active' },
+  { id: 'j-doe',        label: 'J. Doe',       token: 'c_5rlj8b34',  type: 'personal', cx: 238, cy: 348, inCluster: false, status: 'active' },
+  { id: 'john-doe-llc', label: 'John Doe LLC', token: 'c_3kmt7wx92', type: 'business', cx: 568, cy: 345, inCluster: false, status: 'active', holder: 'AH_jdoe_001', holderLabel: 'John Doe', accountCount: 2 },
   { id: 'jon-doe',      label: 'Jon Doe',      token: 'c_9qnv2pz81', type: 'personal', cx: 400, cy: 500, inCluster: false, status: 'suspended' },
   // ── External: connected via shared signal, outside NPID_123456 ───────────────
   { id: 'torres', label: 'M. Torres', token: 'c_7pqr3st8', type: 'personal', cx: 658, cy: 148, inCluster: false, status: 'active',    external: true, externalNpid: 'NPID_789012', controlSignal: 'bank-account' },
@@ -75,12 +77,12 @@ const EDGES: Edge[] = [
   { x1: 558, y1: 316, x2: 453, y2: 308, signal: 'bank-account' },
   { x1: 360, y1: 412, x2: 380, y2: 366, signal: 'payment-card' },
   // dashed to outer nodes
-  { x1: 354, y1: 308, x2: 207, y2: 350, dashed: true, toNode: 'j-doe' },
-  { x1: 450, y1: 310, x2: 608, y2: 358, dashed: true, toNode: 'john-doe-llc' },
+  { x1: 354, y1: 308, x2: 243, y2: 344, dashed: true, toNode: 'j-doe' },
+  { x1: 450, y1: 310, x2: 558, y2: 337, dashed: true, toNode: 'john-doe-llc' },
   { x1: 400, y1: 372, x2: 400, y2: 487, dashed: true, toNode: 'jon-doe' },
-  { x1: 360, y1: 428, x2: 203, y2: 352, signal: 'payment-card', toNode: 'j-doe' },
+  { x1: 360, y1: 428, x2: 244, y2: 352, signal: 'payment-card', toNode: 'j-doe' },
   // Account holder: john-doe ↔ john-doe-llc share AH_jdoe_001
-  { x1: 400, y1: 105, x2: 625, y2: 360, signal: 'account-holder', fromNode: 'john-doe', toNode: 'john-doe-llc', color: '#22c55e', strokeWidth: 2 },
+  { x1: 400, y1: 105, x2: 568, y2: 345, signal: 'account-holder', fromNode: 'john-doe', toNode: 'john-doe-llc', color: '#22c55e', strokeWidth: 1.5, dashed: true },
   // External: M. Torres shares bank account → connected to bank-account signal dot
   { x1: 558, y1: 300, x2: 651, y2: 158, signal: 'bank-account', toNode: 'torres', dashed: true },
   // External: D. Kim shares cash device → connected to cash-device signal dot
@@ -132,6 +134,8 @@ export function NPIDClusterGraph({
   const [unclusteringReason, setUnclusteringReason] = useState('')
   const [accountTypes, setAccountTypes] = useState({ ...DEFAULT_ACCOUNT_TYPES })
   const [signals, setSignals] = useState<Record<SignalKey, boolean>>({ ...DEFAULT_SIGNALS })
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [lineageOpen, setLineageOpen] = useState(false)
 
   const resetLegend = () => { setAccountTypes({ ...DEFAULT_ACCOUNT_TYPES }); setSignals({ ...DEFAULT_SIGNALS }) }
   const clearLegend = () => {
@@ -178,16 +182,16 @@ export function NPIDClusterGraph({
             May 27, 2026 at 4:12 pm
           </span>
           <span className="text-zinc-300">|</span>
-          <button className="text-brand font-medium hover:underline">
-            Cluster history (3)
+          <button onClick={() => setLineageOpen(true)} className="text-brand font-medium hover:underline">
+            NPID lineage (3)
           </button>
         </div>
       </div>
 
       {/* Graph area */}
-      <div className="flex" style={{ height: 420 }}>
+      <div className="flex" style={{ height: 460 }}>
         {/* Legend */}
-        <div className="w-52 shrink-0 border-r border-zinc-100 p-4 overflow-y-auto bg-zinc-50">
+        <div className="w-52 shrink-0 border-r border-zinc-100 p-4 overflow-y-auto bg-white">
           <LegendSection title="Node Shapes">
             <LegendShape label="Personal account" shape="triangle" />
             <LegendShape label="Business account" shape="pentagon" />
@@ -215,10 +219,7 @@ export function NPIDClusterGraph({
 
         {/* Canvas */}
         <div className="flex-1 relative bg-zinc-50 overflow-hidden">
-          <div className="absolute top-3 left-4 text-xs font-semibold text-brand tracking-wide">
-            CLUSTER UNDER REVIEW · NPID_123456
-          </div>
-          <button className="absolute top-3 right-4 flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 px-2 py-1 rounded bg-white">
+          <button onClick={() => setIsFullscreen(true)} className="absolute top-3 right-4 flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 px-2 py-1 rounded bg-white">
             <Maximize2 size={11} /> Fullscreen
           </button>
 
@@ -249,8 +250,10 @@ export function NPIDClusterGraph({
             {/* NPID hexagon */}
             <polygon
               points={hexPoints(HEX_CX, HEX_CY, HEX_R)}
-              fill="#5eead4"
-              stroke="#0d9488"
+              fill="#bfdbfe"
+              fillOpacity={0.2}
+              stroke="#3b82f6"
+              strokeOpacity={0.5}
               strokeWidth={2}
             />
             <text x={HEX_CX} y={HEX_CY - 6} textAnchor="middle" fontSize={9} fontWeight={700} fill="#0f766e" letterSpacing={1}>NPID CLUSTER</text>
@@ -263,29 +266,30 @@ export function NPIDClusterGraph({
               const isMarked = markedIds.has(node.id)
               const isExternal = !!node.external
               const opacity = isSelected ? 1 : isExternal ? 0.6 : 0.35
-              const nodeColor = isExternal ? '#f9fafb' : node.status === 'suspended' ? '#fca5a5' : node.inCluster ? '#ffffff' : '#f3f4f6'
+              const nodeColor = isExternal ? '#f9fafb' : node.status === 'suspended' ? '#fca5a5' : '#d1fae5'
+              const shapeOpacity = isSelected ? 1 : isExternal ? 0.6 : 0.8
               const strokeColor = isMarked ? '#f97316' : isSelected ? '#12B76A' : isExternal ? '#9ca3af' : node.status === 'suspended' ? '#f87171' : '#9ca3af'
               const shapeDash = isExternal && !isSelected ? '4 2' : undefined
 
               return (
-                <g key={node.id} style={{ opacity }} className="cursor-pointer" onClick={() => onSelectId(node.id)}>
+                <g key={node.id} className="cursor-pointer" onClick={() => onSelectId(node.id)}>
                   {isSelected && (
                     <circle cx={node.cx} cy={node.cy} r={30} fill="none"
                       stroke="#3b82f6" strokeWidth={1.5} strokeDasharray="5 3" />
                   )}
                   {node.type === 'personal' ? (
-                    <polygon points={triPoints(node.cx, node.cy)} fill={nodeColor} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} strokeDasharray={shapeDash} />
+                    <polygon points={triPoints(node.cx, node.cy)} fill={nodeColor} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} strokeDasharray={shapeDash} opacity={shapeOpacity} />
                   ) : (
-                    <polygon points={pentPoints(node.cx, node.cy)} fill={nodeColor} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} strokeDasharray={shapeDash} />
+                    <polygon points={pentPoints(node.cx, node.cy)} fill={nodeColor} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} strokeDasharray={shapeDash} opacity={shapeOpacity} />
                   )}
-                  <text x={node.cx} y={node.cy + 32} textAnchor="middle" fontSize={10} fontWeight={600} fill={isSelected ? '#111827' : isExternal ? '#9ca3af' : '#374151'}>
+                  <text x={node.cx} y={node.cy + 32} textAnchor="middle" fontSize={10} fontWeight={600} fill={isSelected ? '#111827' : isExternal ? '#9ca3af' : '#374151'} opacity={opacity}>
                     {node.label}
                   </text>
-                  <text x={node.cx} y={node.cy + 44} textAnchor="middle" fontSize={9} fill="#9ca3af">
+                  <text x={node.cx} y={node.cy + 44} textAnchor="middle" fontSize={9} fill="#9ca3af" opacity={opacity}>
                     {node.token}
                   </text>
                   {isExternal && (
-                    <text x={node.cx} y={node.cy + 56} textAnchor="middle" fontSize={8} fill="#9ca3af" fontStyle="italic">
+                    <text x={node.cx} y={node.cy + 56} textAnchor="middle" fontSize={8} fill="#9ca3af" fontStyle="italic" opacity={opacity}>
                       {node.externalNpid ?? 'No NPID'}
                     </text>
                   )}
@@ -322,9 +326,9 @@ export function NPIDClusterGraph({
 
       {/* Pinned for comparison */}
       <div className="border-t border-zinc-100">
-        <div className="flex items-center justify-between px-5 py-2.5">
+        <div className="flex items-center justify-between px-5 pt-2 pb-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Pinned for Comparison</span>
+            <span className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide">Pinned for Comparison</span>
             {pinnedIds.length > 0 && (
               <span className="w-5 h-5 rounded-full bg-zinc-200 text-zinc-600 text-2xs font-bold flex items-center justify-center">
                 {pinnedIds.length}
@@ -338,25 +342,25 @@ export function NPIDClusterGraph({
           )}
         </div>
 
-        <div className="px-5 pb-4 grid gap-3" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div className="px-5 pb-2 grid gap-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
           {pinnedNodes.map(node => {
             const d = ACCOUNT_DETAILS[node.id]
             return (
-              <div key={node.id} className="border border-zinc-200 rounded-xl p-4">
-                <div className="flex items-start justify-between gap-2 mb-3">
+              <div key={node.id} className="border border-zinc-200 rounded-xl p-2">
+                <div className="flex items-start justify-between gap-2 mb-1">
                   <div>
-                    <div className="text-sm font-bold text-zinc-900">{node.label}</div>
-                    <div className="text-xs font-mono text-zinc-400">{node.token}</div>
+                    <div className="text-xs font-bold text-zinc-900">{node.label}</div>
+                    <div className="text-2xs font-mono text-zinc-400">{node.token}</div>
                   </div>
                   <button
                     onClick={() => unpinNode(node.id)}
-                    className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 px-2 py-1 rounded shrink-0"
+                    className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 px-2 py-0.5 rounded shrink-0"
                   >
                     <X size={10} /> Unpin
                   </button>
                 </div>
                 {d && (
-                  <div className="space-y-1.5 text-xs">
+                  <div className="space-y-0.5 text-xs">
                     {([
                       ['Cashtag', d.cashtag],
                       ['Type', d.type],
@@ -380,18 +384,102 @@ export function NPIDClusterGraph({
 
           {/* Empty slot (shown when under 4 pins) */}
           {pinnedIds.length < 4 && (
-            <div className="border border-dashed border-zinc-200 rounded-xl flex items-center justify-center bg-zinc-50 text-xs text-zinc-400 text-center px-4 py-5">
+            <div className="border border-dashed border-zinc-200 rounded-xl flex items-center justify-center bg-zinc-50 text-xs text-zinc-400 text-center px-4 py-2">
               Pin an account to compare
             </div>
           )}
         </div>
       </div>
 
-      {/* Footer note */}
-      <div className="border-t border-zinc-100 px-5 py-2.5 flex items-center gap-2 text-2xs text-zinc-400">
-        <span className="w-4 h-4 rounded-full border border-zinc-300 flex items-center justify-center text-[9px] shrink-0">i</span>
-        Marking an account for unclustering only adds it to the review list. Cluster changes are submitted from the decision panel and require L2 approval.
-      </div>
+      {lineageOpen && <NPIDLineageModal onClose={() => setLineageOpen(false)} />}
+
+      {/* Fullscreen modal */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setIsFullscreen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ width: '92vw', height: '88vh' }} onClick={e => e.stopPropagation()}>
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 shrink-0">
+              <h3 className="text-base font-semibold text-zinc-900">NPID Cluster Graph</h3>
+              <button onClick={() => setIsFullscreen(false)} className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 px-2 py-1 rounded bg-white">
+                <X size={11} /> Close
+              </button>
+            </div>
+            {/* Modal body: legend + canvas */}
+            <div className="flex flex-1 overflow-hidden">
+              {/* Legend */}
+              <div className="w-52 shrink-0 border-r border-zinc-100 p-4 overflow-y-auto bg-white">
+                <LegendSection title="Node Shapes">
+                  <LegendShape label="Personal account" shape="triangle" />
+                  <LegendShape label="Business account" shape="pentagon" />
+                  <LegendShape label="NPID cluster" shape="hexagon" />
+                  <LegendShape label="External account" shape="ext-triangle" color="#9ca3af" />
+                  <LegendShape label="Shared signal" shape="dot" color="#9ca3af" />
+                </LegendSection>
+                <div className="flex gap-2 mt-3 mb-4">
+                  <button onClick={resetLegend} className="px-3 py-1 text-2xs border border-zinc-200 rounded text-zinc-500 hover:bg-zinc-50">Reset</button>
+                  <button onClick={clearLegend} className="px-3 py-1 text-2xs border border-zinc-200 rounded text-zinc-500 hover:bg-zinc-50">Clear</button>
+                </div>
+                <LegendSection title="Account Types">
+                  <Toggle label="Personal account" on={accountTypes.personal} onChange={v => setAccountTypes(p => ({ ...p, personal: v }))} />
+                  <Toggle label="Business account" on={accountTypes.business} onChange={v => setAccountTypes(p => ({ ...p, business: v }))} />
+                </LegendSection>
+                <LegendSection title="Signal Layer">
+                  {SIGNAL_CONFIGS.map(s => (
+                    <Toggle key={s.key} label={s.label} color={s.color} on={signals[s.key]} onChange={v => setSignals(p => ({ ...p, [s.key]: v }))} />
+                  ))}
+                </LegendSection>
+              </div>
+              {/* Canvas */}
+              <div className="flex-1 relative bg-zinc-50">
+                <svg viewBox="10 45 780 520" className="w-full h-full">
+                  <circle cx={HEX_CX} cy={HEX_CY} r={215} fill="none" stroke="#d1d5db" strokeWidth={1.5} strokeDasharray="6 4" />
+                  {EDGES.filter(edgeVisible).map((e, i) => (
+                    <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+                      stroke={e.color ?? '#d1d5db'}
+                      strokeWidth={e.strokeWidth ?? 1}
+                      strokeDasharray={e.dashed ? '4 3' : undefined}
+                    />
+                  ))}
+                  {SIGNALS.filter(s => signals[s.id as SignalKey]).map(s => (
+                    <g key={s.id}>
+                      <circle cx={s.cx} cy={s.cy} r={7} fill={s.color} />
+                      <text x={s.cx} y={s.cy + 18} textAnchor="middle" fontSize={10} fill="#6b7280">{s.label}</text>
+                    </g>
+                  ))}
+                  <polygon points={hexPoints(HEX_CX, HEX_CY, HEX_R)} fill="#bfdbfe" fillOpacity={0.2} stroke="#3b82f6" strokeOpacity={0.5} strokeWidth={2} />
+                  <text x={HEX_CX} y={HEX_CY - 6} textAnchor="middle" fontSize={9} fontWeight={700} fill="#0f766e" letterSpacing={1}>NPID CLUSTER</text>
+                  <text x={HEX_CX} y={HEX_CY + 8} textAnchor="middle" fontSize={11} fontWeight={700} fill="#134e4a">NPID_123456</text>
+                  <text x={HEX_CX} y={HEX_CY + 22} textAnchor="middle" fontSize={9} fill="#0f766e">4 accounts</text>
+                  {[...NODES.filter(n => n.external && nodeVisible(n)), ...NODES.filter(n => !n.external && nodeVisible(n))].map(node => {
+                    const isSelected = node.id === selectedId
+                    const isMarked = markedIds.has(node.id)
+                    const isExternal = !!node.external
+                    const opacity = isSelected ? 1 : isExternal ? 0.6 : 0.35
+                    const nodeColor = isExternal ? '#f9fafb' : node.status === 'suspended' ? '#fca5a5' : '#d1fae5'
+                    const shapeOpacity = isSelected ? 1 : isExternal ? 0.6 : 0.8
+                    const strokeColor = isMarked ? '#f97316' : isSelected ? '#12B76A' : isExternal ? '#9ca3af' : node.status === 'suspended' ? '#f87171' : '#9ca3af'
+                    const shapeDash = isExternal && !isSelected ? '4 2' : undefined
+                    return (
+                      <g key={node.id} className="cursor-pointer" onClick={() => onSelectId(node.id)}>
+                        {isSelected && <circle cx={node.cx} cy={node.cy} r={30} fill="none" stroke="#3b82f6" strokeWidth={1.5} strokeDasharray="5 3" />}
+                        {node.type === 'personal'
+                          ? <polygon points={triPoints(node.cx, node.cy)} fill={nodeColor} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} strokeDasharray={shapeDash} opacity={shapeOpacity} />
+                          : <polygon points={pentPoints(node.cx, node.cy)} fill={nodeColor} stroke={strokeColor} strokeWidth={isSelected ? 2 : 1.5} strokeDasharray={shapeDash} opacity={shapeOpacity} />
+                        }
+                        <text x={node.cx} y={node.cy + 32} textAnchor="middle" fontSize={10} fontWeight={600} fill={isSelected ? '#111827' : isExternal ? '#9ca3af' : '#374151'} opacity={opacity}>{node.label}</text>
+                        <text x={node.cx} y={node.cy + 44} textAnchor="middle" fontSize={9} fill="#9ca3af" opacity={opacity}>{node.token}</text>
+                        {isExternal && <text x={node.cx} y={node.cy + 56} textAnchor="middle" fontSize={8} fill="#9ca3af" fontStyle="italic" opacity={opacity}>{node.externalNpid ?? 'No NPID'}</text>}
+                        {isMarked && <text x={node.cx} y={node.cy - 26} textAnchor="middle" fontSize={8} fill="#ea580c" fontWeight={700}>MARKED</text>}
+                      </g>
+                    )
+                  })}
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
@@ -500,97 +588,99 @@ function AccountPanel({
             Account holder <span className="font-mono">{node.holder}</span>
           </div>
           <p className="text-amber-700 leading-relaxed">
-            {node.label} (AH) owns {node.accountCount} accounts.{' '}
+            {node.holderLabel ?? node.label} (AH) owns {node.accountCount} accounts.{' '}
             <strong>The whole holder must be unclustered as a unit</strong> — individual accounts cannot be removed separately.
           </p>
         </div>
       )}
 
-      <div className="border-t border-zinc-100 mx-4" />
+      <div className="border-t border-zinc-100" />
 
-      {/* Actions */}
-      <div className="mb-3">
-        <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Actions</div>
-        <div className="flex gap-2">
-          <button
-            onClick={onPin}
-            className={clsx(
-              'flex-1 flex items-center gap-2 px-3 py-3 rounded-xl border text-sm transition-colors whitespace-nowrap',
-              isPinned
-                ? 'border-zinc-900 bg-white text-zinc-900 font-semibold'
-                : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
-            )}
-          >
-            <Link2 size={14} className="shrink-0" />
-            {isPinned ? 'Pinned' : 'Pin for comparison'}
-          </button>
-          <button className="shrink-0 flex items-center gap-2 px-3 py-3 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 text-sm hover:bg-zinc-100 transition-colors whitespace-nowrap">
-            <ExternalLink size={14} className="shrink-0" /> Open Toolbox
-          </button>
-        </div>
-      </div>
-
-      {/* Mark button — external accounts are never candidates */}
-      {!node.external && !isMarked && (
-        <button
-          onClick={onMarkClick}
-          className={clsx(
-            'w-full py-3 border font-medium rounded-xl transition-colors text-sm',
-            showingUnclustering
-              ? 'bg-red-50 border-red-400 text-red-600'
-              : 'bg-red-50 border-red-300 text-red-600 hover:border-red-400'
-          )}
-        >
-          Mark account holder for unclustering
-        </button>
-      )}
-
-      {!node.external && showingUnclustering && (
-        <div className="mt-2 bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-          <div className="text-2xs font-semibold text-red-600 uppercase tracking-wide">Unclustering Reason</div>
-          <select
-            value={unclusteringReason}
-            onChange={e => onUnclusteringReasonChange(e.target.value)}
-            className="w-full text-sm border border-red-300 rounded-xl px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-red-200"
-          >
-            <option value="">Select a reason...</option>
-            <option>Different natural person</option>
-            <option>Business account — not a natural person</option>
-            <option>Insufficient linking evidence</option>
-            <option>CIP data conflict</option>
-            <option>Analyst error in prior clustering</option>
-          </select>
-          <p className="text-xs text-zinc-500 leading-relaxed">
-            Marking for unclustering adds this to the decision panel's review list. You can change the reason there before submission.
-          </p>
-          <div className="flex items-center justify-end gap-2 pt-1">
+      <div className="px-4 pt-3 pb-4 space-y-2">
+        {/* Actions */}
+        <div className="mb-1">
+          <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Actions</div>
+          <div className="flex gap-2">
             <button
-              onClick={onCancelMark}
-              className="px-4 py-2 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+              onClick={onPin}
+              className={clsx(
+                'flex-1 flex items-center gap-2 px-3 py-3 rounded-xl border text-sm transition-colors whitespace-nowrap',
+                isPinned
+                  ? 'border-zinc-900 bg-white text-zinc-900 font-semibold'
+                  : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
+              )}
             >
-              Cancel
+              <Link2 size={14} className="shrink-0" />
+              {isPinned ? 'Pinned' : 'Pin for comparison'}
             </button>
-            <button
-              onClick={onConfirmMark}
-              className="px-4 py-2 bg-red-200 rounded-xl text-sm text-red-700 font-medium hover:bg-red-300 transition-colors"
-            >
-              Mark
+            <button className="shrink-0 flex items-center gap-2 px-3 py-3 rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700 text-sm hover:bg-zinc-100 transition-colors whitespace-nowrap">
+              <ExternalLink size={14} className="shrink-0" /> Open Toolbox
             </button>
           </div>
         </div>
-      )}
 
-      {!node.external && isMarked && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 text-xs text-orange-700">
-          Added to decision panel review list.
-        </div>
-      )}
+        {/* Mark button — external accounts are never candidates */}
+        {!node.external && !isMarked && (
+          <button
+            onClick={onMarkClick}
+            className={clsx(
+              'w-full py-3 border font-medium rounded-xl transition-colors text-sm',
+              showingUnclustering
+                ? 'bg-red-50 border-red-400 text-red-600'
+                : 'bg-red-50 border-red-300 text-red-600 hover:border-red-400'
+            )}
+          >
+            Mark account holder for unclustering
+          </button>
+        )}
 
-      {node.external && (
-        <div className="bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-500 leading-relaxed">
-          This account is outside NPID_123456. It cannot be marked for unclustering here — investigate it separately if needed.
-        </div>
-      )}
+        {!node.external && showingUnclustering && (
+          <div className="mt-2 bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+            <div className="text-2xs font-semibold text-red-600 uppercase tracking-wide">Unclustering Reason</div>
+            <select
+              value={unclusteringReason}
+              onChange={e => onUnclusteringReasonChange(e.target.value)}
+              className="w-full text-sm border border-red-300 rounded-xl px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-red-200"
+            >
+              <option value="">Select a reason...</option>
+              <option>Different natural person</option>
+              <option>Business account — not a natural person</option>
+              <option>Insufficient linking evidence</option>
+              <option>CIP data conflict</option>
+              <option>Analyst error in prior clustering</option>
+            </select>
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              Marking for unclustering adds this to the decision panel's review list. You can change the reason there before submission.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={onCancelMark}
+                className="px-4 py-2 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirmMark}
+                className="px-4 py-2 bg-red-200 rounded-xl text-sm text-red-700 font-medium hover:bg-red-300 transition-colors"
+              >
+                Mark
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!node.external && isMarked && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 text-xs text-orange-700">
+            Added to decision panel review list.
+          </div>
+        )}
+
+        {node.external && (
+          <div className="bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-500 leading-relaxed">
+            This account is outside NPID_123456. It cannot be marked for unclustering here — investigate it separately if needed.
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -613,7 +703,7 @@ function LegendShape({ label, shape, color = '#6b7280' }: { label: string; shape
         {shape === 'triangle' && <polygon points="8,1 1,13 15,13" fill="none" stroke={color} strokeWidth={1.5} />}
         {shape === 'ext-triangle' && <polygon points="8,1 1,13 15,13" fill="none" stroke={color} strokeWidth={1.5} strokeDasharray="3 1.5" />}
         {shape === 'pentagon' && <polygon points="8,1 15,6 12,13 4,13 1,6" fill="none" stroke={color} strokeWidth={1.5} />}
-        {shape === 'hexagon' && <polygon points="8,1 14,4.5 14,9.5 8,13 2,9.5 2,4.5" fill="#5eead4" stroke="#0d9488" strokeWidth={1.5} />}
+        {shape === 'hexagon' && <polygon points="8,1 14,4.5 14,9.5 8,13 2,9.5 2,4.5" fill="#bfdbfe" fillOpacity={0.2} stroke="#3b82f6" strokeOpacity={0.5} strokeWidth={1.5} />}
         {shape === 'dot' && <circle cx={8} cy={7} r={4} fill={color} />}
       </svg>
       {label}

@@ -1,27 +1,38 @@
 import { useState } from 'react'
-import { X, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react'
+import { X, ChevronUp, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 
 const STEPS = [
-  { id: 'confirm-cluster', label: 'Confirm cluster' },
-  { id: 'remove-accounts', label: 'Remove from cluster' },
-  { id: 'review-submit', label: 'Review & submit' },
-]
-
-const CLUSTER_ACCOUNTS = [
-  { id: 'john-doe', token: 'C_ABC123XY', name: 'John Doe', status: 'ACTIVE', npid: 'NPID_123456', warning: null },
-  { id: 'j-doe', token: 'C_DEF456AB', name: 'J. Doe', status: 'ACTIVE', npid: 'NPID_123456', warning: 'Holder unit mismatch detected' },
-  { id: 'john-doe-llc', token: 'C_GHI789CD', name: 'John Doe LLC', status: 'ACTIVE', npid: 'NPID_123456', warning: null },
-  { id: 'jon-doe', token: 'C_JKL012EF', name: 'Jon Doe', status: 'SUSPENDED', npid: 'NPID_123456', warning: 'Suspended account — verify ownership before confirming' },
+  { id: 'confirm-cluster', label: 'Disposition' },
+  { id: 'remove-accounts', label: 'Remove' },
+  { id: 'review-submit', label: 'Submit' },
 ]
 
 const UNCLUSTERING_REASONS = [
+  'Clustering error',
   'Different natural person',
   'Business account — not a natural person',
   'Insufficient linking evidence',
   'CIP data conflict',
   'Analyst error in prior clustering',
 ]
+
+const HOLDER_UNIT = {
+  id: 'AH_jdoe_001',
+  label: 'John Doe (AH)',
+  accounts: [
+    { name: 'John Doe',     token: 'c_8hpfrgye4', type: 'PERSONAL', verification: 'EIDV', status: 'ACTIVE' },
+    { name: 'John Doe LLC', token: 'c_3kmt7wx92', type: 'BUSINESS', verification: 'DIDV', status: 'ACTIVE' },
+  ],
+}
+
+const SINGLETONS = [
+  { id: 'jon-doe', name: 'Jon Doe', token: 'c_9qnv2pz81', type: 'PERSONAL', verification: 'EIDV',         status: 'SUSPENDED' },
+  { id: 'j-doe',   name: 'J. Doe',  token: 'c_5r1jab34',  type: 'PERSONAL', verification: 'NOT VERIFIED', status: 'ACTIVE'    },
+]
+
+const DEFAULT_HOLDER_COMMENT = 'Verified identity data for this account holder conflicts with the remaining cluster. The shared device signal alone is insufficient to support continued grouping.'
+const DEFAULT_NOTES = 'The reviewed cluster contains conflicting verified identity data. John Doe and John Doe LLC belong to the same account holder and must be removed together. Their verified identity information does not match the remaining cluster, and the shared device signal is insufficient to establish operation by one natural person. Submit the proposed account-holder removal for L2 approval.'
 
 interface NPIDDecisionPanelProps {
   onClose: () => void
@@ -33,12 +44,33 @@ export function NPIDDecisionPanel({ onClose, markedIds, markReasons }: NPIDDecis
   const [stepId, setStepId] = useState('confirm-cluster')
   const activeIdx = STEPS.findIndex(s => s.id === stepId)
 
+  const holderNodeIds = ['john-doe', 'john-doe-llc']
+  const holderInitReason = holderNodeIds.map(id => markReasons[id]).find(Boolean) ?? 'Clustering error'
+
+  // Step 2 state lifted to panel so Step 3 can read it
+  const [holderChecked, setHolderChecked] = useState(true)
+  const [holderReason, setHolderReason] = useState(holderInitReason)
+  const [holderComment, setHolderComment] = useState(DEFAULT_HOLDER_COMMENT)
+  const [singletonSelected, setSingletonSelected] = useState<Set<string>>(
+    () => new Set(SINGLETONS.filter(s => markedIds.has(s.id)).map(s => s.id))
+  )
+  const [singletonReasons, setSingletonReasons] = useState<Record<string, string>>(
+    () => Object.fromEntries(SINGLETONS.filter(s => markReasons[s.id]).map(s => [s.id, markReasons[s.id]]))
+  )
+  const [singletonComments, setSingletonComments] = useState<Record<string, string>>({})
+  const [notes, setNotes] = useState(DEFAULT_NOTES)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+
+  const isSubmitStep = stepId === 'review-submit'
+
   const goNext = () => {
-    if (activeIdx < STEPS.length - 1) setStepId(STEPS[activeIdx + 1].id)
+    if (activeIdx < STEPS.length - 1) {
+      const nextId = STEPS[activeIdx + 1].id
+      setStepId(nextId)
+      if (nextId === 'review-submit') setSummaryOpen(true)
+    }
   }
-  const goBack = () => {
-    if (activeIdx > 0) setStepId(STEPS[activeIdx - 1].id)
-  }
+  const goBack = () => { if (activeIdx > 0) setStepId(STEPS[activeIdx - 1].id) }
 
   return (
     <div className="w-[500px] shrink-0 border-l border-zinc-200 bg-white flex flex-col h-full overflow-hidden">
@@ -97,17 +129,55 @@ export function NPIDDecisionPanel({ onClose, markedIds, markReasons }: NPIDDecis
           <ConfirmClusterStep initialAnswer={markedIds.size > 0 ? 'no' : ''} />
         )}
         {stepId === 'remove-accounts' && (
-          <RemoveAccountsStep markedIds={markedIds} markReasons={markReasons} />
+          <RemoveAccountsStep
+            holderChecked={holderChecked}
+            setHolderChecked={setHolderChecked}
+            holderReason={holderReason}
+            setHolderReason={setHolderReason}
+            holderComment={holderComment}
+            setHolderComment={setHolderComment}
+            singletonSelected={singletonSelected}
+            setSingletonSelected={setSingletonSelected}
+            singletonReasons={singletonReasons}
+            setSingletonReasons={setSingletonReasons}
+            singletonComments={singletonComments}
+            setSingletonComments={setSingletonComments}
+          />
         )}
-        {stepId === 'review-submit' && <ReviewSubmitStep />}
+        {stepId === 'review-submit' && (
+          <ReviewSubmitStep
+            holderChecked={holderChecked}
+            holderReason={holderReason}
+            holderComment={holderComment}
+            singletonSelected={singletonSelected}
+            singletonReasons={singletonReasons}
+            singletonComments={singletonComments}
+          />
+        )}
       </div>
 
       {/* Footer */}
       <div className="bg-zinc-50 border-t border-zinc-200">
-        <button className="w-full flex items-center justify-between px-5 py-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors">
-          Investigation Summary*
-          <ChevronUp size={14} className="text-zinc-400" />
+        <button
+          onClick={() => setSummaryOpen(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
+        >
+          Investigation Summary{isSubmitStep ? ' *' : ''}
+          <ChevronUp size={14} className={clsx('text-zinc-400 transition-transform', summaryOpen ? '' : 'rotate-180')} />
         </button>
+
+        {summaryOpen && (
+          <div className="px-5 pb-3">
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={5}
+              placeholder="Describe the evidence reviewed, conflicting signals observed, and your reasoning for the determination..."
+              className="w-full px-3 py-2.5 text-sm border border-zinc-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand placeholder:text-zinc-400"
+            />
+          </div>
+        )}
+
         <div className="flex items-center gap-3 px-5 pb-4">
           <button
             onClick={activeIdx === STEPS.length - 1 ? () => alert('Cluster verification submitted!') : goNext}
@@ -136,21 +206,9 @@ function ConfirmClusterStep({ initialAnswer = '' }: { initialAnswer?: string }) 
   const [answer, setAnswer] = useState<string>(initialAnswer)
 
   const OPTIONS = [
-    {
-      value: 'yes',
-      label: 'Yes, cluster is accurate',
-      sub: 'All accounts are operated by one natural person',
-    },
-    {
-      value: 'no',
-      label: 'No, cluster is not accurate',
-      sub: 'One or more accounts should be removed from this cluster',
-    },
-    {
-      value: 'unable',
-      label: 'Unable to determine',
-      sub: 'Insufficient evidence to confirm or deny cluster accuracy',
-    },
+    { value: 'yes',    label: 'Yes, cluster is accurate',    sub: 'All accounts are operated by one natural person' },
+    { value: 'no',     label: 'No, cluster is not accurate', sub: 'One or more accounts should be removed from this cluster' },
+    { value: 'unable', label: 'Unable to determine',         sub: 'Insufficient evidence to confirm or deny cluster accuracy' },
   ]
 
   return (
@@ -170,9 +228,7 @@ function ConfirmClusterStep({ initialAnswer = '' }: { initialAnswer?: string }) 
               onClick={() => setAnswer(opt.value)}
               className={clsx(
                 'w-full text-left px-4 py-3 rounded-xl border transition-colors',
-                answer === opt.value
-                  ? 'border-brand bg-brand/5'
-                  : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                answer === opt.value ? 'border-brand bg-brand/5' : 'border-zinc-200 hover:border-zinc-300 bg-white'
               )}
             >
               <div className="flex items-start gap-3">
@@ -180,15 +236,10 @@ function ConfirmClusterStep({ initialAnswer = '' }: { initialAnswer?: string }) 
                   'mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center',
                   answer === opt.value ? 'border-brand' : 'border-zinc-300'
                 )}>
-                  {answer === opt.value && (
-                    <div className="w-2 h-2 rounded-full bg-brand" />
-                  )}
+                  {answer === opt.value && <div className="w-2 h-2 rounded-full bg-brand" />}
                 </div>
                 <div>
-                  <div className={clsx(
-                    'text-sm font-semibold',
-                    answer === opt.value ? 'text-zinc-900' : 'text-zinc-700'
-                  )}>
+                  <div className={clsx('text-sm font-semibold', answer === opt.value ? 'text-zinc-900' : 'text-zinc-700')}>
                     {opt.label}
                   </div>
                   <div className="text-xs text-zinc-500 mt-0.5">{opt.sub}</div>
@@ -214,20 +265,6 @@ function ConfirmClusterStep({ initialAnswer = '' }: { initialAnswer?: string }) 
 }
 
 // ─── Step 2: Remove accounts ──────────────────────────────────────────────────
-
-const HOLDER_UNIT = {
-  id: 'AH_jdoe_001',
-  label: 'John Doe (AH)',
-  accounts: [
-    { name: 'John Doe',     token: 'c_8hpfrgye4', type: 'PERSONAL', verification: 'EIDV', status: 'ACTIVE' },
-    { name: 'John Doe LLC', token: 'c_3kmt7wx92', type: 'BUSINESS', verification: 'DIDV', status: 'ACTIVE' },
-  ],
-}
-
-const SINGLETONS = [
-  { id: 'jon-doe', name: 'Jon Doe', token: 'c_9qnv2pz81', type: 'PERSONAL', verification: 'EIDV',         status: 'SUSPENDED' },
-  { id: 'j-doe',   name: 'J. Doe',  token: 'c_5r1jab34',  type: 'PERSONAL', verification: 'NOT VERIFIED', status: 'ACTIVE'    },
-]
 
 function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -262,50 +299,40 @@ function AccountRow({ name, token, type, verification, status }: {
         <AccountPill>{type}</AccountPill>
         <AccountPill>{verification}</AccountPill>
         <span className={clsx(
-          'text-2xs font-bold uppercase tracking-wide',
-          status === 'SUSPENDED' ? 'text-red-500' : 'text-brand'
+          'text-2xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded',
+          status === 'SUSPENDED' ? 'text-red-600 bg-red-50' : 'text-green-700 bg-green-100'
         )}>{status}</span>
       </div>
     </div>
   )
 }
 
-function EvidenceButton() {
-  return (
-    <button className="text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 px-2 py-1 rounded shrink-0 flex items-center gap-1">
-      Evidence <ChevronDown size={10} />
-    </button>
-  )
-}
-
 function RemoveAccountsStep({
-  markedIds,
-  markReasons,
+  holderChecked, setHolderChecked,
+  holderReason, setHolderReason,
+  holderComment, setHolderComment,
+  singletonSelected, setSingletonSelected,
+  singletonReasons, setSingletonReasons,
+  singletonComments, setSingletonComments,
 }: {
-  markedIds: Set<string>
-  markReasons: Record<string, string>
+  holderChecked: boolean
+  setHolderChecked: (v: boolean | ((p: boolean) => boolean)) => void
+  holderReason: string
+  setHolderReason: (v: string) => void
+  holderComment: string
+  setHolderComment: (v: string) => void
+  singletonSelected: Set<string>
+  setSingletonSelected: (v: Set<string> | ((p: Set<string>) => Set<string>)) => void
+  singletonReasons: Record<string, string>
+  setSingletonReasons: (v: Record<string, string> | ((p: Record<string, string>) => Record<string, string>)) => void
+  singletonComments: Record<string, string>
+  setSingletonComments: (v: Record<string, string> | ((p: Record<string, string>) => Record<string, string>)) => void
 }) {
-  const holderNodeIds = ['john-doe', 'john-doe-llc']
-  const holderMarked = holderNodeIds.some(id => markedIds.has(id))
-  const holderInitReason = holderNodeIds.map(id => markReasons[id]).find(Boolean) ?? ''
-
-  const [holderChecked, setHolderChecked] = useState(holderMarked)
-  const [holderReason, setHolderReason] = useState(holderInitReason)
-  const [holderComment, setHolderComment] = useState('')
-  const [singletonSelected, setSingletonSelected] = useState<Set<string>>(
-    () => new Set(SINGLETONS.filter(s => markedIds.has(s.id)).map(s => s.id))
-  )
-  const [singletonReasons, setSingletonReasons] = useState<Record<string, string>>(
-    () => Object.fromEntries(SINGLETONS.filter(s => markReasons[s.id]).map(s => [s.id, markReasons[s.id]]))
-  )
-  const [singletonComments, setSingletonComments] = useState<Record<string, string>>({})
-
   const toggleSingleton = (id: string) =>
     setSingletonSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
 
   return (
     <div className="space-y-3">
-      {/* Header */}
       <div>
         <p className="text-sm font-semibold text-zinc-900 mb-0.5">
           Remove accounts or account holders from this NPID cluster
@@ -326,17 +353,16 @@ function RemoveAccountsStep({
         <div className="flex items-start gap-3 px-4 py-3">
           <Checkbox checked={holderChecked} onChange={() => setHolderChecked(v => !v)} />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-0 flex-wrap">
               <span className="text-sm font-semibold text-zinc-900">
                 Remove account holder · {HOLDER_UNIT.label}
               </span>
-              <span className="text-2xs font-bold text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">
-                {HOLDER_UNIT.accounts.length} accounts · must be removed together
+              <span className="text-2xs font-bold text-amber-600 whitespace-nowrap">
+                {HOLDER_UNIT.accounts.length} accounts must be removed together
               </span>
             </div>
             <div className="text-xs text-zinc-400 font-mono mt-0.5">{HOLDER_UNIT.id}</div>
           </div>
-          <EvidenceButton />
         </div>
 
         {HOLDER_UNIT.accounts.map(a => (
@@ -345,9 +371,6 @@ function RemoveAccountsStep({
 
         {holderChecked && (
           <div className="border-t border-zinc-200 px-4 py-3 space-y-3 bg-zinc-50/50">
-            <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-relaxed">
-              <span className="font-semibold">Holder-unit removal.</span> All {HOLDER_UNIT.accounts.length} accounts attached to {HOLDER_UNIT.label} will be removed together. Individual accounts cannot be unclustered from a multi-account holder.
-            </div>
             <div>
               <label className="block text-xs font-semibold text-zinc-700 mb-1">
                 Unclustering reason <span className="text-red-500">*</span>
@@ -390,7 +413,6 @@ function RemoveAccountsStep({
                 <div className="text-sm font-semibold text-zinc-900">Remove account · {acct.name}</div>
                 <div className="text-xs text-zinc-400 font-mono mt-0.5">{acct.token}</div>
               </div>
-              <EvidenceButton />
             </div>
 
             <AccountRow name={acct.name} token={acct.token} type={acct.type} verification={acct.verification} status={acct.status} />
@@ -435,69 +457,139 @@ function RemoveAccountsStep({
 
 // ─── Step 3: Review & submit ──────────────────────────────────────────────────
 
-function ReviewSubmitStep() {
-  const [notes, setNotes] = useState('')
+const ALL_ACCOUNTS = [
+  ...HOLDER_UNIT.accounts.map(a => ({ ...a, id: a.name === 'John Doe' ? 'john-doe' : 'john-doe-llc', inHolder: true })),
+  ...SINGLETONS.map(s => ({ ...s, inHolder: false })),
+]
+
+function ReviewSubmitStep({
+  holderChecked,
+  holderReason,
+  holderComment,
+  singletonSelected,
+  singletonReasons,
+  singletonComments,
+}: {
+  holderChecked: boolean
+  holderReason: string
+  holderComment: string
+  singletonSelected: Set<string>
+  singletonReasons: Record<string, string>
+  singletonComments: Record<string, string>
+}) {
+  const removedSingletons = SINGLETONS.filter(s => singletonSelected.has(s.id))
+  const totalRemoved = (holderChecked ? HOLDER_UNIT.accounts.length : 0) + removedSingletons.length
+  const remainingCount = ALL_ACCOUNTS.length - totalRemoved
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-sm font-semibold text-zinc-900 mb-3">Review your determination</p>
+      <p className="text-sm font-semibold text-zinc-900">Review your determination</p>
 
-        <div className="bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 space-y-3 text-sm">
-          <div>
-            <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-1">NPID Under Review</div>
-            <div className="font-mono text-sm font-medium text-zinc-900">NPID_123456</div>
-          </div>
-          <div>
-            <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-1">Determination</div>
-            <div className="text-sm font-medium text-zinc-900">Cluster not accurate — accounts to remove</div>
-          </div>
-          <div>
-            <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Accounts in scope</div>
-            <div className="space-y-1.5">
-              {CLUSTER_ACCOUNTS.map(acct => (
-                <div key={acct.id} className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
-                  <span className="text-xs font-medium text-zinc-900">{acct.name}</span>
-                  <span className="font-mono text-xs text-zinc-400">{acct.token}</span>
-                  <span className={clsx(
-                    'ml-auto text-2xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded',
-                    acct.status === 'SUSPENDED' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                  )}>
-                    {acct.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Summary card */}
+      <div className="bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 space-y-4 text-sm">
+        {/* NPID + determination */}
+        <div className="space-y-2">
+          <ReviewRow label="NPID under review">
+            <span className="font-mono text-sm font-medium text-zinc-900">NPID_123456</span>
+          </ReviewRow>
+          <ReviewRow label="Determination">
+            <span className="text-sm font-medium text-zinc-900">Cluster not accurate — accounts to remove</span>
+          </ReviewRow>
         </div>
+
+        <div className="border-t border-zinc-200" />
+
+        {/* Proposed removal */}
+        <div>
+          <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Proposed removal</div>
+
+          {holderChecked && (
+            <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white mb-2">
+              <div className="px-4 py-2.5">
+                <div className="text-xs font-semibold text-zinc-900">{HOLDER_UNIT.label}</div>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <span className="text-xs text-zinc-400 font-mono">{HOLDER_UNIT.id}</span>
+                  <span className="text-xs text-zinc-400">· {HOLDER_UNIT.accounts.length} accounts</span>
+                </div>
+                <p className="text-2xs text-zinc-400 mt-1">
+                  These accounts must be removed together as one account-holder unit.
+                </p>
+              </div>
+              {HOLDER_UNIT.accounts.map(a => (
+                <AccountRow key={a.token} {...a} />
+              ))}
+              {holderReason && (
+                <div className="border-t border-zinc-100 px-4 py-2.5 space-y-1">
+                  <ReviewRow label="Unclustering reason">
+                    <span className="text-xs text-zinc-900">{holderReason}</span>
+                  </ReviewRow>
+                  {holderComment && (
+                    <ReviewRow label="Comment">
+                      <span className="text-xs text-zinc-700">{holderComment}</span>
+                    </ReviewRow>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {removedSingletons.map(acct => (
+            <div key={acct.id} className="border border-zinc-200 rounded-xl overflow-hidden bg-white mb-2">
+              <AccountRow name={acct.name} token={acct.token} type={acct.type} verification={acct.verification} status={acct.status} />
+              {singletonReasons[acct.id] && (
+                <div className="border-t border-zinc-100 px-4 py-2.5 space-y-1">
+                  <ReviewRow label="Unclustering reason">
+                    <span className="text-xs text-zinc-900">{singletonReasons[acct.id]}</span>
+                  </ReviewRow>
+                  {singletonComments[acct.id] && (
+                    <ReviewRow label="Comment">
+                      <span className="text-xs text-zinc-700">{singletonComments[acct.id]}</span>
+                    </ReviewRow>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {!holderChecked && removedSingletons.length === 0 && (
+            <p className="text-xs text-zinc-400 italic">No accounts selected for removal.</p>
+          )}
+        </div>
+
+        {/* Resulting cluster */}
+        {remainingCount > 0 && (
+          <>
+            <div className="border-t border-zinc-200" />
+            <div>
+              <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-1.5">Resulting cluster</div>
+              <p className="text-xs text-zinc-700">
+                <span className="font-medium">{remainingCount} account{remainingCount !== 1 ? 's' : ''}</span> will remain in NPID_123456
+              </p>
+              <p className="text-2xs text-zinc-400 mt-0.5">No changes take effect until L2 approval</p>
+            </div>
+          </>
+        )}
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-zinc-900 mb-1.5">
-          Investigation notes
-        </label>
-        <p className="text-xs text-zinc-500 mb-2">
-          Summarize the evidence supporting your determination. Required for L2 approval.
-        </p>
-        <textarea
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          rows={5}
-          placeholder="Describe the evidence reviewed, conflicting signals observed, and your reasoning for the determination..."
-          className="w-full px-3 py-2.5 text-sm border border-zinc-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand placeholder:text-zinc-400"
-        />
-      </div>
-
+      {/* L2 notice */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs">
         <div className="flex items-center gap-1.5 font-semibold text-amber-800 mb-0.5">
           <span className="w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-white text-[9px] shrink-0">!</span>
           L2 approval required
         </div>
         <p className="text-amber-700 ml-5.5">
-          This determination will be routed to a senior analyst for final approval before changes are applied to NPID_123456.
+          This proposed removal will be routed to a senior analyst for approval. No changes will be applied to NPID_123456 until approved.
         </p>
       </div>
+    </div>
+  )
+}
+
+function ReviewRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-2 text-xs">
+      <span className="text-zinc-400 shrink-0 w-36">{label}</span>
+      <div className="text-zinc-700 min-w-0">{children}</div>
     </div>
   )
 }

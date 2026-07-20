@@ -1,5 +1,6 @@
 import { Search, Users } from 'lucide-react'
 import clsx from 'clsx'
+import { NPIDTransactionSearch } from './NPIDTransactionSearch'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -278,6 +279,11 @@ export function NPIDAccountView({
               <div className="text-2xs text-zinc-400 mt-0.5">{tile.sub}</div>
             </div>
           ))}
+        </div>
+
+        {/* Transaction table */}
+        <div id="transactions" className="border-t border-zinc-100 px-5 py-4">
+          <NPIDTransactionSearch />
         </div>
       </div>
     </div>

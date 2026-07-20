@@ -29,17 +29,25 @@ export function LeftNav({ items, activeId, onSelect }: LeftNavProps) {
         <nav className="h-full overflow-y-auto pt-2 pb-4">
           {items.map(item => (
             <div key={item.id}>
-              <button
-                onClick={() => onSelect(item.id)}
-                className={clsx(
-                  'w-full text-left px-4 py-1 text-xs transition-colors relative',
-                  activeId === item.id
-                    ? 'text-zinc-900 font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-brand before:rounded-full'
-                    : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
-                )}
-              >
-                {item.label}
-              </button>
+              {item.isSection ? (
+                <div className="px-4 pt-3 pb-0.5">
+                  <span className="text-2xs font-bold text-zinc-400 uppercase tracking-widest">
+                    {item.label}
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => onSelect(item.id)}
+                  className={clsx(
+                    'w-full text-left px-4 py-1 text-xs transition-colors relative',
+                    activeId === item.id
+                      ? 'text-zinc-900 font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-brand before:rounded-full'
+                      : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50'
+                  )}
+                >
+                  {item.label}
+                </button>
+              )}
 
               {item.children?.map(child => (
                 <button

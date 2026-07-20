@@ -70,13 +70,11 @@ export function DataField({
 }) {
   return (
     <div className={wide ? 'col-span-2' : undefined}>
-      <div className="text-2xs font-semibold text-zinc-400 uppercase tracking-wide mb-1">
-        {label}
-      </div>
+      <span className="text-xs font-medium text-zinc-900">{label}</span>{' '}
       {children ?? (
-        <div className={`text-sm font-medium text-zinc-900 ${mono ? 'font-mono' : ''}`}>
+        <span className={`text-xs text-zinc-500 ${mono ? 'font-mono' : ''}`}>
           {value}
-        </div>
+        </span>
       )}
     </div>
   )

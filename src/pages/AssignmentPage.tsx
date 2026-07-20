@@ -19,11 +19,14 @@ import { AssignmentTimeline } from '../components/assignment/AssignmentTimeline'
 import { AssignmentAttachments } from '../components/assignment/AssignmentAttachments'
 import { DecisionPanel } from '../components/decision/DecisionPanel'
 import { AppealsDecisionPanel } from '../components/decision/AppealsDecisionPanel'
+import { ScamsDecisionPanel } from '../components/decision/ScamsDecisionPanel'
 import { CustomerCard } from '../components/customer/CustomerCard'
 import { NPIDSummaryCards } from '../components/npid/NPIDSummaryCards'
 import { NPIDClusterGraph } from '../components/npid/NPIDClusterGraph'
 import { NPIDDecisionPanel } from '../components/npid/NPIDDecisionPanel'
 import { NPIDAccountView } from '../components/npid/NPIDAccountView'
+import { NPIDBauContent } from '../components/npid/NPIDBauContent'
+import { SquareCreditCard } from '../components/evidence/SquareCreditCard'
 import { WORKFLOW_CONFIGS, type WorkflowConfig } from '../config/workflows'
 import { ASSIGNMENTS, type Assignment, type Account } from '../data/mock'
 
@@ -43,10 +46,17 @@ export default function AssignmentPage() {
   const [decisionPanelOpen, setDecisionPanelOpen] = useState(false)
   const [completionType, setCompletionType] = useState<'completed' | 'l2-review' | null>(null)
   const [toastShowing, setToastShowing] = useState(false)
+  const [scamsCompleted, setScamsCompleted] = useState(false)
 
   const handleComplete = (isL2: boolean) => {
     const type = isL2 ? 'l2-review' : 'completed'
     setCompletionType(type)
+    setToastShowing(true)
+    setTimeout(() => setToastShowing(false), 3000)
+  }
+
+  const handleScamsComplete = () => {
+    setScamsCompleted(true)
     setToastShowing(true)
     setTimeout(() => setToastShowing(false), 3000)
   }
@@ -115,7 +125,7 @@ export default function AssignmentPage() {
               ctaLabel={claimed ? 'Decide' : 'Claim'}
               onCTA={handleCTA}
               claimed={claimed}
-              completed={!!completionType}
+              completed={!!completionType || scamsCompleted}
             />
 
             {config.showDenylistInfo && assignment.denylistInfo && (
@@ -124,7 +134,7 @@ export default function AssignmentPage() {
               </div>
             )}
 
-            {workflowId !== 'npid-verification' && config.tabs.length > 1 && (
+            {workflowId !== 'npid-verification' && workflowId !== 'npid-bau' && config.tabs.length > 1 && (
               <div>
                 <WorkflowTabs
                   tabs={config.tabs}
@@ -143,6 +153,8 @@ export default function AssignmentPage() {
                   setMarkReasons(prev => ({ ...prev, [id]: reason }))
                 }}
               />
+            ) : workflowId === 'npid-bau' ? (
+              <NPIDBauContent />
             ) : (
               <TabContent
                 activeTab={activeTab}
@@ -151,6 +163,7 @@ export default function AssignmentPage() {
                 selectedSubjectId={selectedSubjectId}
                 onSelectSubject={setSelectedSubjectId}
                 selectedAccount={selectedAccount}
+                scamsCompleted={scamsCompleted}
               />
             )}
           </div>
@@ -172,15 +185,23 @@ export default function AssignmentPage() {
             previewStep={previewStep}
           />
         )}
-        {decisionPanelOpen && workflowId !== 'npid-verification' && config.decisionVariant !== 'appeals' && (
+        {decisionPanelOpen && (config.decisionVariant === 'scams-l1' || config.decisionVariant === 'scams-l2') && (
+          <ScamsDecisionPanel
+            onClose={() => setDecisionPanelOpen(false)}
+            onComplete={handleScamsComplete}
+          />
+        )}
+        {decisionPanelOpen && workflowId !== 'npid-verification' && config.decisionVariant !== 'appeals' && config.decisionVariant !== 'scams-l1' && config.decisionVariant !== 'scams-l2' && (
           <DecisionPanel
             assignmentId={assignment.numericId}
             accountToken={assignment.primarySubject?.id ?? assignment.customer?.id ?? ''}
             onClose={() => setDecisionPanelOpen(false)}
+            onComplete={() => handleComplete(false)}
+            decisionVariant={config.decisionVariant}
           />
         )}
       </div>
-      {completionType && (
+      {(completionType || scamsCompleted) && (
         <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${toastShowing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}`}>
           <div className="flex items-center gap-3 px-5 py-3.5 bg-emerald-600 rounded-xl shadow-xl">
             <CheckCircle size={16} className="text-white shrink-0" />
@@ -210,15 +231,19 @@ function NPIDContent({
   const [selectedId, setSelectedId] = useState('john-doe')
 
   return (
-    <div className="px-6 pb-6 pt-2 space-y-6">
+    <div className="px-6 pb-6 pt-1 space-y-6">
       <NPIDSummaryCards />
-      <NPIDClusterGraph
-        markedIds={markedIds}
-        onMark={onMark}
-        selectedId={selectedId}
-        onSelectId={setSelectedId}
-      />
-      <NPIDAccountView selectedId={selectedId} onSelectId={setSelectedId} />
+      <div id="cluster-graph">
+        <NPIDClusterGraph
+          markedIds={markedIds}
+          onMark={onMark}
+          selectedId={selectedId}
+          onSelectId={setSelectedId}
+        />
+      </div>
+      <div id="account-detail">
+        <NPIDAccountView selectedId={selectedId} onSelectId={setSelectedId} />
+      </div>
     </div>
   )
 }
@@ -226,10 +251,11 @@ function NPIDContent({
 function TabContent({
   activeTab,
   config,
-  assignment,
+  assignment: baseAssignment,
   selectedSubjectId,
   onSelectSubject,
-  selectedAccount,
+  selectedAccount: baseSelectedAccount,
+  scamsCompleted,
 }: {
   activeTab: string
   config: WorkflowConfig
@@ -237,7 +263,47 @@ function TabContent({
   selectedSubjectId: string
   onSelectSubject: (id: string) => void
   selectedAccount: Account | undefined
+  scamsCompleted?: boolean
 }) {
+  const assignment = scamsCompleted ? {
+    ...baseAssignment,
+    customer: baseAssignment.customer ? {
+      ...baseAssignment.customer,
+      status: 'denylisted' as const,
+      complianceTags: ['PERSONAL', 'MANUAL REVIEW', 'DENYLISTED', 'LINKED CUSTOMERS'],
+    } : baseAssignment.customer,
+    primarySubject: baseAssignment.primarySubject ? {
+      ...baseAssignment.primarySubject,
+      status: 'denylisted' as const,
+      denylistDetails: {
+        deniedDate: 'Jul 17, 2026',
+        reason: 'Scam-related activity',
+        reasonCode: 'SCAM_RELATED_ACTIVITY',
+        denylistedBy: 'Risk Operations — Manual Review',
+        priorEvents: 1,
+        riskTier: 'High',
+        caseId: baseAssignment.caseId,
+        scope: 'Account-level adversity',
+        issuedBy: 'Risk Operations',
+      },
+    } : baseAssignment.primarySubject,
+    adversityHistory: [
+      {
+        id: 'adv-x-scam',
+        issuedBy: 'Risk Operations',
+        issuedAt: 'Jul 17, 2026',
+        type: 'DENYLIST',
+        organization: 'MANUAL',
+        reasons: ['Scams'],
+        reasonCodes: ['SCAMS'],
+      },
+      ...(baseAssignment.adversityHistory ?? []),
+    ],
+  } : baseAssignment
+
+  const selectedAccount = scamsCompleted && baseSelectedAccount?.id === 'C_2nj8wk1dv'
+    ? { ...baseSelectedAccount, status: 'denylisted' as const }
+    : baseSelectedAccount
   const [activityOpen, setActivityOpen] = useState(false)
 
   // AI Insights tab (scams, sar)
@@ -371,6 +437,10 @@ function TabContent({
           <div id="alerts">
             <AlertsTable alerts={assignment.alerts} />
           </div>
+        )}
+
+        {config.id === 'npid-bau' && (
+          <SquareCreditCard />
         )}
       </div>
     )

@@ -17,6 +17,7 @@ export interface TabConfig {
 export interface NavItem {
   id: string;
   label: string;
+  isSection?: boolean;
   children?: NavItem[];
 }
 
@@ -239,24 +240,28 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
     title: 'NPID BAU / Multi-account',
     showAIInsights: false,
     aiInsightsDepth: 'none',
-    showAccountSelector: true,
+    showAccountSelector: false,
     accountMode: 'multi',
     showDenylistInfo: false,
-    showAlerts: true,
+    showAlerts: false,
     decisionVariant: 'npid-bau',
     tabs: [
-      { id: 'review', label: 'Review' },
-      { id: 'account', label: 'Account' },
-      { id: 'transactions', label: 'Transactions' },
-      { id: 'alerts', label: 'Alerts' },
+      { id: 'cluster', label: 'Cluster' },
     ],
     navItems: [
-      { id: 'assignment', label: 'Assignment' },
-      { id: 'cluster', label: 'NPID Cluster' },
-      { id: 'account', label: 'Account' },
-      { id: 'transactions', label: 'Transactions' },
-      { id: 'alerts', label: 'Alerts' },
-      { id: 'timeline', label: 'Timeline' },
+      { id: 'assignment-section', label: 'Assignment', isSection: true, children: [
+        { id: 'assignment-overview', label: 'Overview' },
+      ]},
+      { id: 'customer-section', label: 'Customer', isSection: true, children: [
+        { id: 'customer', label: 'Jordan Mercer' },
+      ]},
+      { id: 'npid-context-section', label: 'NPID Context', isSection: true, children: [
+        { id: 'alert-context', label: 'Alert Context' },
+        { id: 'accounts-in-scope', label: 'Accounts in Scope' },
+      ]},
+      { id: 'transaction-search-section', label: 'Transaction Search', isSection: true, children: [
+        { id: 'bau-transactions', label: 'Transactions' },
+      ]},
     ],
   },
 
@@ -272,17 +277,13 @@ export const WORKFLOW_CONFIGS: Record<string, WorkflowConfig> = {
     decisionVariant: 'npid-verification',
     tabs: [
       { id: 'cluster', label: 'Cluster' },
-      { id: 'account', label: 'Selected Account' },
-      { id: 'graph', label: 'Relationship Graph' },
-      { id: 'activity', label: 'Financial Activity' },
     ],
     navItems: [
-      { id: 'assignment', label: 'Assignment' },
-      { id: 'cluster', label: 'Cluster Summary' },
-      { id: 'graph', label: 'Relationship Graph' },
-      { id: 'account', label: 'Account Detail' },
-      { id: 'activity', label: 'Financial Activity' },
-      { id: 'lineage', label: 'NPID Lineage' },
+      { id: 'cluster-trigger', label: 'Cluster trigger' },
+      { id: 'cluster-summary', label: 'Cluster summary' },
+      { id: 'cluster-graph', label: 'Cluster graph' },
+      { id: 'account-detail', label: 'Account detail' },
+      { id: 'transactions', label: 'Transactions' },
     ],
   },
 };

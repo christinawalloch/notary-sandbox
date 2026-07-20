@@ -37,7 +37,7 @@ export interface Account {
 }
 
 export interface ConnectedAccount extends Account {
-  sharedEvidence: SharedEvidence[];
+  sharedEvidence?: SharedEvidence[];
   verified?: boolean;
   l30Activity?: string;
 }
@@ -72,7 +72,7 @@ export interface AssetHistoryEvent {
 export interface AssetIdentifier {
   id: string;
   type: string;
-  tokenShort: string;
+  tokenShort?: string;
   token: string;
   added: string;
   isUnlinked?: boolean;
@@ -183,7 +183,7 @@ export interface Assignment {
   linkedAssignments?: number;
   tags?: string[];
   customer?: Account;
-  primarySubject?: Account;
+  primarySubject?: ConnectedAccount;
   connectedSubjects?: ConnectedAccount[];
   alerts?: Alert[];
   denylistInfo?: DenylistInfo;
@@ -934,37 +934,26 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
       accountToken: 'C_2nj8wk1dv',
       displayName: 'Xiao Liu',
       legalName: 'Xiao Liu',
-      status: 'denylisted',
+      status: 'active',
       verified: false,
       email: 'xiao.liu.sf@example.com',
       phone: '(415) 555-0194',
       joined: '5 months ago (Sep 14, 2025)',
       address: '88 Waverly Pl, San Francisco, CA 94108, US',
       avatarColor: '#0ea5e9',
-      complianceTags: ['PERSONAL', 'MANUAL REVIEW', 'DENYLISTED', 'LINKED CUSTOMERS'],
+      complianceTags: ['PERSONAL', 'MANUAL REVIEW', 'UNDER REVIEW', 'LINKED CUSTOMERS'],
     },
     primarySubject: {
       id: 'C_2nj8wk1dv',
       displayName: 'Xiao Liu',
       legalName: 'Xiao Liu',
-      status: 'denylisted',
+      status: 'active',
       avatarColor: '#0ea5e9',
       verified: false,
       sharedEvidence: [
         { type: 'SSN', token: '***-**-6892' },
         { type: 'Device', token: 'dev-3F90A1C2...' },
       ],
-      denylistDetails: {
-        deniedDate: 'Mar 3, 2025',
-        reason: 'Money Mule — Coordinated Network',
-        reasonCode: 'MONEY_MULE_COORD_L2',
-        denylistedBy: 'Financial Crimes Unit — Manual Review',
-        priorEvents: 2,
-        riskTier: 'Critical',
-        caseId: 'NTRY_CASE_mL9pXrBk2T',
-        scope: 'Account-level adversity',
-        issuedBy: 'Financial Crimes Unit',
-      },
     },
     connectedSubjects: [
       {
@@ -1053,29 +1042,13 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
         tokenShort: '...3317',
         token: 'ending in 3317',
         added: 'Oct 7, 2025 at 2:05 PM',
-        isUnlinked: true,
-        unlinkedAt: 'Mar 4, 2026 at 8:22 AM',
-        unlinkReason: 'Card deactivated following denylist action',
         processorLabel: 'Marqeta',
         history: [
           { date: 'Oct 7, 2025 at 2:05 PM', action: 'Added', actor: 'system', note: 'Cash Card issued shortly after account setup.' },
-          { date: 'Mar 4, 2026 at 8:22 AM', action: 'Unlinked', actor: 'Risk Ops — Automated', note: 'Card deactivated as part of coordinated denylist action.' },
         ],
       },
     ],
     adversityHistory: [
-      {
-        id: 'adv-x1',
-        issuedBy: 'Financial Crimes',
-        issuedAt: 'Mar 3, 2025',
-        type: 'DENYLIST',
-        organization: 'MANUAL',
-        reasons: ['Money Mule — Coordinated Network'],
-        reasonCodes: ['MONEY_MULE_COORD_L2'],
-        revokedBy: undefined,
-        revokedAt: undefined,
-        revokeReason: undefined,
-      },
       {
         id: 'adv-x2',
         issuedBy: 'Risk Ops',
@@ -1294,37 +1267,26 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
       accountToken: 'C_2nj8wk1dv',
       displayName: 'Xiao Liu',
       legalName: 'Xiao Liu',
-      status: 'denylisted',
+      status: 'active',
       verified: false,
       email: 'xiao.liu.sf@example.com',
       phone: '(415) 555-0194',
       joined: '5 months ago (Sep 14, 2025)',
       address: '88 Waverly Pl, San Francisco, CA 94108, US',
       avatarColor: '#0ea5e9',
-      complianceTags: ['PERSONAL', 'MANUAL REVIEW', 'DENYLISTED', 'LINKED CUSTOMERS'],
+      complianceTags: ['PERSONAL', 'MANUAL REVIEW', 'UNDER REVIEW', 'LINKED CUSTOMERS'],
     },
     primarySubject: {
       id: 'C_2nj8wk1dv',
       displayName: 'Xiao Liu',
       legalName: 'Xiao Liu',
-      status: 'denylisted',
+      status: 'active',
       avatarColor: '#0ea5e9',
       verified: false,
       sharedEvidence: [
         { type: 'SSN', token: '***-**-6892' },
         { type: 'Device', token: 'dev-3F90A1C2...' },
       ],
-      denylistDetails: {
-        deniedDate: 'Mar 3, 2025',
-        reason: 'Money Mule — Coordinated Network',
-        reasonCode: 'MONEY_MULE_COORD_L2',
-        denylistedBy: 'Financial Crimes Unit — Manual Review',
-        priorEvents: 2,
-        riskTier: 'Critical',
-        caseId: 'NTRY_CASE_mL9pXrBk2T',
-        scope: 'Account-level adversity',
-        issuedBy: 'Financial Crimes Unit',
-      },
     },
     connectedSubjects: [
       {
@@ -1413,29 +1375,13 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
         tokenShort: '...3317',
         token: 'ending in 3317',
         added: 'Oct 7, 2025 at 2:05 PM',
-        isUnlinked: true,
-        unlinkedAt: 'Mar 4, 2026 at 8:22 AM',
-        unlinkReason: 'Card deactivated following denylist action',
         processorLabel: 'Marqeta',
         history: [
           { date: 'Oct 7, 2025 at 2:05 PM', action: 'Added', actor: 'system', note: 'Cash Card issued shortly after account setup.' },
-          { date: 'Mar 4, 2026 at 8:22 AM', action: 'Unlinked', actor: 'Risk Ops — Automated', note: 'Card deactivated as part of coordinated denylist action.' },
         ],
       },
     ],
     adversityHistory: [
-      {
-        id: 'adv-x1',
-        issuedBy: 'Financial Crimes',
-        issuedAt: 'Mar 3, 2025',
-        type: 'DENYLIST',
-        organization: 'MANUAL',
-        reasons: ['Money Mule — Coordinated Network'],
-        reasonCodes: ['MONEY_MULE_COORD_L2'],
-        revokedBy: undefined,
-        revokedAt: undefined,
-        revokeReason: undefined,
-      },
       {
         id: 'adv-x2',
         issuedBy: 'Risk Ops',
@@ -1490,21 +1436,40 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
             id: 'l2-item-discrepancy',
             label: 'Item discrepancy',
             finding: 'The reporter received an item different from the listing. Determine whether this reflects intentional substitution or a fulfillment dispute.',
+            detailText: 'The reporter submitted a photograph of the item received alongside the original marketplace listing. The listing described designer jeans (brand and size specified). The received item does not match the listing description or photographs. L2 review should determine whether the subject shipped the wrong item by mistake or deliberately substituted a lower-value item post-payment.',
+            detailBullets: [
+              'Item listed: designer jeans, size 30x32, retail value ~$280',
+              'Item received: unbranded gray sweatpants — photograph submitted by reporter',
+              'Distinction: deliberate substitution vs. fulfillment error has material bearing on outcome',
+            ],
           },
           {
             id: 'l2-account-control',
             label: 'Account control at time of transaction',
             finding: 'The reported activity is associated with device ending 90A1. Confirm who controlled the account and device when the payment and messages occurred.',
+            detailText: 'Session data shows all activity on Jul 11–15, 2026 — including the $475 receipt, post-payment messages, and reporter block — was initiated from a single mobile device (device token ending 90A1). This device has been associated with C_2nj8wk1dv since account creation. No concurrent sessions or anomalous access events were detected during this period.',
+            detailBullets: [
+              'Device ending 90A1: primary device on account since Sep 14, 2025',
+              'All relevant activity on Jul 11–15, 2026 from this device only',
+              'No shared sessions, VPN, or atypical geo indicators detected',
+            ],
           },
           {
             id: 'l2-external-relationship',
             label: 'External relationship',
             finding: 'The parties connected through an external marketplace. Available evidence does not establish whether they had any relationship before this transaction.',
+            detailText: 'The reporter stated they found the listing on a third-party online marketplace and initiated contact through that platform. No mutual contacts, shared platform activity, or prior Cash App interactions were identified. However, external relationship history (social media, messaging apps, in-person) cannot be verified through available signals and is not confirmed.',
           },
           {
             id: 'l2-fulfillment-evidence',
             label: 'Fulfillment evidence',
             finding: 'A package was delivered, but the available evidence does not confirm whether the shipment was a legitimate fulfillment attempt.',
+            detailText: 'USPS tracking records confirm a package was shipped on Jul 13, 2026 and delivered on Jul 15, 2026. The subject provided the tracking number in chat. However, no packing slip, order record, or pre-shipment listing confirmation has been submitted. The item delivered does not match the advertised product, leaving open whether the subject shipped in good faith or used shipment as a delay tactic.',
+            detailBullets: [
+              'Carrier: USPS — tracking number provided by subject in chat',
+              'Shipped: Jul 13, 2026 · Delivered: Jul 15, 2026',
+              'Contents not confirmed by carrier — item mismatch identified by reporter photograph',
+            ],
           },
         ],
       },
@@ -1518,31 +1483,52 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
             id: 'l2-deception-pattern',
             label: 'Intentional deception pattern',
             finding: 'The recipient accepted a $475 payment, sent an unrelated item, refused a refund, and blocked the reporter.',
+            detailText: 'The end-to-end sequence — accepting payment, providing a tracking number for a non-matching item, dismissing refund requests, and blocking the reporter — is consistent with a deliberate post-payment deception strategy. Each step follows a pattern commonly observed in marketplace fraud where the subject uses shipment of a low-value item to create the appearance of fulfillment while retaining the payment.',
+            detailBullets: [
+              'Payment accepted: Jul 11, 2026',
+              'Non-matching item shipped and delivered: Jul 13–15, 2026',
+              'All three refund requests refused — reporter blocked Jul 15, 2026',
+            ],
           },
           {
             id: 'l2-mocking-language',
             label: 'Deceptive or mocking language',
             finding: 'Messages include mocking language and statements indicating that the advertised item would not be delivered.',
+            detailText: 'Three messages sent by the subject after payment are directly inconsistent with a good-faith fulfillment attempt. The language reflects awareness that the correct item was not shipped and a deliberate refusal to remedy the situation.',
+            detailBullets: [
+              '"lol good luck getting anything back" — Jul 14, 2026 at 2:18 PM',
+              '"I already sold the real ones, you got what you paid for" — Jul 14, 2026 at 2:21 PM',
+              'Laughing emoji in response to final refund request — Jul 15, 2026 at 9:07 AM',
+            ],
           },
           {
             id: 'l2-strong-evidence',
             label: 'Strong supporting evidence',
             finding: 'The report includes payment confirmation, six message screenshots, and a photo of the item received.',
+            detailText: 'The reporter submitted 8 pieces of corroborating evidence. Submission quality and completeness scored in the 91st percentile for this queue. The evidence set covers the full transaction lifecycle: initiation, payment, shipment, delivery, and post-delivery communication.',
+            detailBullets: [
+              'Payment confirmation screenshot — Jul 11, 2026',
+              'Six chat screenshots covering listing inquiry, payment, tracking number, and three refund requests',
+              'Photograph of item received — does not match listing description or advertised photos',
+            ],
           },
           {
             id: 'l2-no-relationship',
             label: 'No established relationship',
             finding: 'No prior Cash App activity or established external relationship was identified between the parties.',
+            detailText: 'Transaction history spanning 24 months was reviewed for both accounts. No payments of any amount between C_2nj8wk1dv and the reporter were identified prior to Jul 11, 2026. The reporter confirmed they discovered the listing through a third-party marketplace and had no prior contact with the subject. The $475 transfer is the only interaction between these two accounts on the platform.',
           },
           {
             id: 'l2-consistent-report',
             label: 'Report is internally consistent',
             finding: "The reporter's narrative is consistent with the payment record, message history, and uploaded images.",
+            detailText: "The reporter's written narrative, payment confirmation, chat screenshots, and photograph of the received item were cross-referenced. No material inconsistencies were identified. Dates, payment amounts, tracking details, and described events align across all submitted documents. The reported sequence of events is fully supported by the available evidence.",
           },
           {
             id: 'l2-intentional-payment',
             label: 'Intentional payment with no refund',
             finding: 'The payment was intentionally sent for the advertised item, and no refund was identified.',
+            detailText: 'Chat evidence confirms the reporter contacted the subject specifically about the listing, negotiated a price of $475, and intentionally completed the transfer. A full transaction review was conducted across both accounts through Jul 17, 2026. No return transfer of $475 or any partial refund amount was found. The transaction remains unresolved.',
           },
         ],
       },
@@ -1556,11 +1542,13 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
             id: 'l2-partial-fulfillment',
             label: 'Partial fulfillment occurred',
             finding: 'A package was shipped and delivered, which may indicate some attempt to fulfill the transaction.',
+            detailText: 'The subject did take action to ship a physical item and provided a valid tracking number. Delivery was confirmed by USPS on Jul 15, 2026. While the item delivered does not match the listing, the act of shipment is a mitigating factor when distinguishing between non-delivery fraud and item-not-as-described disputes. This does not resolve the item discrepancy, but it is relevant context for outcome determination.',
           },
           {
             id: 'l2-no-prohibited-activity',
             label: 'No unrelated prohibited activity',
             finding: 'The report does not involve prohibited goods or another unrelated Terms of Service category.',
+            detailText: 'The transaction was evaluated against Cash App Terms of Service restricted categories including gambling, adult content, controlled substances, firearms, and sanctioned entities. The listed item (designer jeans) and the nature of the transaction do not fall within any restricted category. The dispute is limited to item misrepresentation and does not implicate additional compliance concerns.',
           },
         ],
       },
@@ -1670,39 +1658,32 @@ export const ASSIGNMENTS: Record<string, Assignment> = {
 
   'npid-bau': {
     id: 'npid-bau',
-    numericId: '3041882',
+    numericId: '2969822',
     status: 'pending',
-    queueName: 'NPID BAU / Multi-account Decisioning',
+    queueName: 'Compliance Cash TM – Demo Queue',
     queueSlug: 'npid_bau_demo',
-    caseId: 'NTRY_CASE_nJ7xKpM2wQ',
-    createdAt: 'Jul 14, 2026',
-    createdRelative: '3 days ago',
-    dueAt: 'Jul 16, 2026',
-    dueRelative: 'yesterday',
+    caseId: 'NTRY_CASE_hUSyoAGVUt',
+    createdAt: 'Jan 16, 2026',
+    createdRelative: '6 months ago',
+    dueAt: 'Feb 15, 2026',
+    dueRelative: 'overdue',
     dueOverdue: true,
     createdBy: 'alert-broker',
     customer: {
-      id: 'C_6tp4mj9bk',
-      accountToken: 'AH_6tp4mj9bk',
-      displayName: 'Alex Reyes',
-      legalName: 'Alex M. Reyes',
+      id: 'C_0ew44lyr8',
+      accountToken: 'AH_8ry144we0',
+      displayName: 'Jordan Mercer',
+      legalName: 'Jordan Mercer',
       status: 'active',
-      email: 'alex.reyes@example.com',
-      phone: '(213) 555-0094',
-      joined: '3 years ago (Sep 22, 2022)',
-      address: '5900 Wilshire Blvd, Los Angeles, CA 90036, US',
+      email: 'j.mercer.wa@protonmail.com',
+      phone: '+1 (206) 555-0174',
+      joined: '2 years ago (Mar 4, 2024)',
+      address: '412 3rd Ave W, Seattle, WA 98119, US',
       avatarColor: '#0ea5e9',
       complianceTags: ['PERSONAL', 'SSN', 'LINKED CUSTOMERS'],
     },
-    primarySubject: { id: 'C_6tp4mj9bk', displayName: 'Alex Reyes', status: 'active', avatarColor: '#0ea5e9' },
-    connectedSubjects: [
-      { id: 'C_3nr8wp2kx', displayName: 'A. Reyes Business', status: 'active', avatarColor: '#f59e0b', sharedEvidence: [{ type: 'SSN', token: 'fid-1-d4a8c3b1...' }] },
-      { id: 'C_8mq5vj3pb', displayName: 'Taylor Reyes', status: 'active', avatarColor: '#8b5cf6', sharedEvidence: [{ type: 'Device', token: 'dev-C2E4A9F7...' }, { type: 'SSN', token: 'fid-1-d4a8c3b1...' }] },
-      { id: 'C_1nw4xt8kp', displayName: 'Reyes Holdings', status: 'denylisted', avatarColor: '#ef4444', sharedEvidence: [{ type: 'Bank Account', token: 'ba-018472...' }] },
-    ],
-    alerts: [
-      { id: '7402915', accountId: 'C_6tp4mj9bk', created: 'Jun 10, 2026', typology: 'TM Alert', executionLabel: 'Execution Details' },
-    ],
+    primarySubject: { id: 'C_0ew44lyr8', displayName: 'Jordan Mercer', status: 'active', avatarColor: '#0ea5e9' },
+    alerts: [],
   },
 
   'npid-verification': {

@@ -36,7 +36,7 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
 
   const filtered = activeFilters.length === 0
     ? connectedSubjects
-    : connectedSubjects.filter(s => s.sharedEvidence.some(e => activeFilters.includes(e.type)))
+    : connectedSubjects.filter(s => s.sharedEvidence?.some(e => activeFilters.includes(e.type)))
 
   return (
     <div>
@@ -114,7 +114,7 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
             </span>
             <span className="text-xs text-zinc-400">Shared Assets</span>
             {EVIDENCE_FILTERS.map(f => {
-              const count = connectedSubjects.filter(s => s.sharedEvidence.some(e => e.type === f)).length
+              const count = connectedSubjects.filter(s => s.sharedEvidence?.some(e => e.type === f)).length
               const on = activeFilters.includes(f)
               return (
                 <button key={f} onClick={() => toggle(f)}
@@ -175,10 +175,10 @@ export function AccountSelector({ primarySubject, connectedSubjects = [], select
                     )}
                   </span>
                 )}
-                {subject.sharedEvidence.length > 0 && (
+                {(subject.sharedEvidence?.length ?? 0) > 0 && (
                   <span className="ml-auto flex items-center gap-2 text-zinc-400 text-xs">
                     <span className="text-zinc-400">Shared:</span>
-                    {subject.sharedEvidence.map((e, i) => {
+                    {subject.sharedEvidence!.map((e, i) => {
                       const highlighted = activeFilters.includes(e.type)
                       return (
                         <span key={i} className={clsx(
